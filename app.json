@@ -1,0 +1,77 @@
+{
+  "name": "PEACE HUB",
+  "description": "A simple yet complicated WhatsApp bot, ♤Enjoy♡",
+  "keywords": [
+    "bot",
+    "whatsapp",
+    "peace",
+    "whatsapp-stickers",
+    "anime",
+    "whatsapp-bot",
+    "whatsapp-sticker-bot",
+    "whatsapp-botto",
+    "baileys",
+    "baileys-md",
+    "md-bot"
+  ],
+  "website": "https://github.com/Devpeacemaker/PEACE-HUB #readme",
+  "repository": "https://github.com/Devpeacemaker/PEACE-HUB.git",
+  "logo": "https://files.catbox.moe/yusei5.jpg",
+  "success_url": "/",
+  "env": {
+    "DEV": {
+      "description": "Put any phone numbers you want to be bot owner without + or spaces \",\" Ex: 254752818245,923208206484",
+      "required": true
+    },
+    "HEROKU_API": {
+      "description": "Put a Heroku API key here, will be required to update vars in your DM",
+      "required": true
+    },
+    "BAD_WORD": {
+      "description": "List words separated with commas that will be considered bad. Example: fuck, pussy, hoe",
+      "value": "fuck,pussy,slut,bitch,cock,stupid",
+      "required": false
+    },
+    "CODE": {
+      "description": "Country code without +, used for antiforeign feature (e.g., 254)",
+      "value": "254",
+      "required": true
+    },
+    "SESSION": {
+      "description": "Paste your Session ID after pairing the bot (required for authentication)",
+      "required": true
+    },
+    "APP_NAME": {
+      "description": "repeat the appname you filled above, lowercase",
+      "required": true
+    },
+    "MENU_LINK": {
+      "description": "Image URL for menu (if MENU_TYPE is IMAGE)",
+      "value": "https://files.catbox.moe/yusei5.jpg",
+      "required": false
+    },
+    "MENU_TYPE": {
+      "description": "VIDEO, LINK, or IMAGE menu format",
+      "value": "IMAGE",
+      "required": false
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection string, it will be automatically added by Heroku Postgres add-on, leave it blank",
+      "required": false
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    },
+    {
+      "url": "https://github.com/clhuang/heroku-buildpack-webp-binaries.git"
+    },
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-activestorage-preview"
+    }
+  ],
+  "addons": [
+    "heroku-postgresql"
+  ]
+}
