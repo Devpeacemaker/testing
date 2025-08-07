@@ -120,71 +120,67 @@ if (!client.public && !mek.key.fromMe && chatUpdate.type === "notify") return;
     }
   });
 
-// Add this at the top of your index.js (with other variable declarations)
-const lastEditNotifications = new Map(); // Track last notifications
+// Add at the top with other declarations
+const processedEdits = new Set();
+const cleanupInterval = 30000; // 30 seconds
+
+// Add this with your other interval functions
+setInterval(() => {
+  processedEdits.clear();
+  console.log(chalk.blue('[ANTIEDIT] Cleared edit tracking cache'));
+}, cleanupInterval);
 
 client.ev.on('messages.update', async (messageUpdates) => {
   try {
     const { antiedit: currentAntiedit } = await fetchSettings();
-    
     if (currentAntiedit === 'off') return;
     
     for (const update of messageUpdates) {
-      const { key, update: { message } } = update;
-      if (!message) continue;
+      const { key } = update;
+      if (!key?.id) continue;
+
+      // Create unique identifier combining message ID and edit timestamp
+      const editIdentifier = `${key.id}-${key.fromMe ? 'me' : 'other'}`;
+      
+      // Skip if we've already processed this edit
+      if (processedEdits.has(editIdentifier)) {
+        continue;
+      }
 
       const chat = key.remoteJid;
       const isGroup = chat.endsWith('@g.us');
-      const editedMsg = message.editedMessage?.message || message.editedMessage;
+      const message = update.update?.message;
+      const editedMsg = message?.editedMessage?.message || message?.editedMessage;
 
-      if (editedMsg) {
-        const messageId = key.id;
-        const now = Date.now();
-        
-        // Skip if we notified about this edit recently (within 5 seconds)
-        if (lastEditNotifications.has(messageId)) {
-          const lastNotificationTime = lastEditNotifications.get(messageId);
-          if (now - lastNotificationTime < 5000) continue; // 5 second cooldown
-        }
+      if (!editedMsg) continue;
 
-        const originalMsg = await store.loadMessage(chat, messageId) || {};
-        const sender = key.participant || key.remoteJid;
-        const senderName = await client.getName(sender);
-        const contentType = getContentType(editedMsg);
-        const editedContent = editedMsg[contentType];
-        
-        const notificationMessage = `🛡️ *PeaceHub Antiedit*\n\n` +
-                                 `👤 *Sender:* @${sender.split('@')[0]}\n` +
-                                 `📜 *Original:* ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
-                                 `✏️ *Edited:* ${editedContent?.text || editedContent?.caption || '(media message)'}\n` +
-                                 `💬 *Chat Type:* ${isGroup ? 'Group' : 'DM'}`;
+      const originalMsg = await store.loadMessage(chat, key.id) || {};
+      const sender = key.participant || key.remoteJid;
+      const senderName = await client.getName(sender);
+      const contentType = getContentType(editedMsg);
+      const editedContent = editedMsg[contentType];
+      
+      const notificationMessage = `🛡️ *PeaceHub Antiedit*\n\n` +
+                               `👤 *Sender:* @${sender.split('@')[0]}\n` +
+                               `📜 *Original:* ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media)'}\n` +
+                               `✏️ *Edited:* ${editedContent?.text || editedContent?.caption || '(media)'}\n` +
+                               `💬 *Chat Type:* ${isGroup ? 'Group' : 'DM'}`;
 
-        if (currentAntiedit === 'private') {
-          await client.sendMessage(client.user.id, { 
-            text: notificationMessage,
-            mentions: [sender]
-          });
-          
-        } else if (currentAntiedit === 'chat') {
-          await client.sendMessage(chat, { 
-            text: notificationMessage,
-            mentions: [sender]
-          });
-        }
-        
-        // Record this notification
-        lastEditNotifications.set(messageId, now);
-        // Clean up old entries periodically
-        if (lastEditNotifications.size > 100) {
-          for (const [id, time] of lastEditNotifications) {
-            if (now - time > 30000) { // 30 second retention
-              lastEditNotifications.delete(id);
-            }
-          }
-        }
-        
-        console.log(chalk.green(`[ANTIEDIT] Detected edit from ${senderName}`));
+      if (currentAntiedit === 'private') {
+        await client.sendMessage(client.user.id, { 
+          text: notificationMessage,
+          mentions: [sender]
+        });
+      } else if (currentAntiedit === 'chat') {
+        await client.sendMessage(chat, { 
+          text: notificationMessage,
+          mentions: [sender]
+        });
       }
+      
+      // Mark this edit as processed
+      processedEdits.add(editIdentifier);
+      console.log(chalk.green(`[ANTIEDIT] Processed edit from ${senderName}`));
     }
   } catch (err) {
     console.error(chalk.red('[ANTIEDIT ERROR]', err));
