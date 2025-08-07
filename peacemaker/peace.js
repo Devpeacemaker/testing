@@ -877,36 +877,56 @@ case "antidelete": {
 break;	
 
 	case 'antiedit': {
-  if (!m.isAdmin) {
-    return m.reply('❌ This command is only for admins');
-  }
-
-  const validModes = ['off', 'private', 'chat'];
-  const newMode = (args[0] || '').toLowerCase();
-  
-  if (!validModes.includes(newMode)) {
-    return m.reply(`❌ Invalid mode. Usage: ${prefix}antiedit [off/private/chat]\n\n` +
-                  `• *off* - Disable edit detection\n` +
-                  `• *private* - Notify editor privately in their DM\n` +
-                  `• *chat* - Notify in the chat where edit occurred`);
-  }
-
   try {
-    // Update database with new antiedit setting
+    // Get current settings first
+    const settings = await fetchSettings();
+    const currentMode = settings.antiedit || 'off';
+
+    const validModes = ['off', 'private', 'chat'];
+    const newMode = (args[0] || '').toLowerCase().trim();
+
+    // Show current mode if no argument provided
+    if (!args[0] || !validModes.includes(newMode)) {
+      const modeDescriptions = {
+        'off': '❌ Disabled',
+        'private': '🔒 Private notifications',
+        'chat': '💬 Chat notifications'
+      };
+      
+      return m.reply(`📝 *Antiedit Settings*\n\n` +
+                    `Current mode: ${modeDescriptions[currentMode]}\n\n` +
+                    `Usage: ${prefix}antiedit [mode]\n\n` +
+                    `Available modes:\n` +
+                    `• off - Disable edit detection\n` +
+                    `• private - Notify editor privately in DM\n` +
+                    `• chat - Notify in the chat where edit occurred`);
+    }
+
+    // Only proceed if mode is changing
+    if (newMode === currentMode) {
+      return m.reply(`ℹ️ Antiedit is already set to *${newMode}* mode`);
+    }
+
+    // Update database
     const db = require('../Database/config');
     await db.query('UPDATE settings SET antiedit = $1 WHERE id = 1', [newMode]);
-    
-    m.reply(`✅ Antiedit mode updated to *${newMode}*`);
-    console.log(chalk.green(`Antiedit mode updated to ${newMode} by ${m.sender}`));
-    
+
     // Refresh settings in memory
-    const fetchSettings = require('../Database/fetchSettings');
-    const settings = await fetchSettings();
-    client.settings = settings;
-    
+    const updatedSettings = await fetchSettings();
+    client.settings = updatedSettings;
+
+    const successMessages = {
+      'off': '✅ Edit detection disabled',
+      'private': '🔒 Now notifying editors privately in DMs',
+      'chat': '💬 Now notifying edits in the chat'
+    };
+
+    m.reply(successMessages[newMode]);
+    console.log(chalk.green(`[ANTIEDIT] Mode changed to ${newMode} by ${m.sender.split('@')[0]}`));
+
   } catch (err) {
-    console.error(chalk.red('Error updating antiedit setting:', err));
-    m.reply('❌ Failed to update antiedit setting. Check console for details.');
+    console.error(chalk.red('[ANTIEDIT ERROR]', err));
+    m.reply('❌ Failed to update antiedit settings. Please check logs.');
   }
   break;
 }
