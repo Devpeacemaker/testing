@@ -120,9 +120,10 @@ if (!client.public && !mek.key.fromMe && chatUpdate.type === "notify") return;
     }
   });
 
-// Updated antiedit handler
+// Add this at the top of your index.js (with other variable declarations)
+const lastEditNotifications = new Map(); // Track last notifications
 
-        client.ev.on('messages.update', async (messageUpdates) => {
+client.ev.on('messages.update', async (messageUpdates) => {
   try {
     const { antiedit: currentAntiedit } = await fetchSettings();
     
@@ -137,7 +138,16 @@ if (!client.public && !mek.key.fromMe && chatUpdate.type === "notify") return;
       const editedMsg = message.editedMessage?.message || message.editedMessage;
 
       if (editedMsg) {
-        const originalMsg = await store.loadMessage(chat, key.id) || {};
+        const messageId = key.id;
+        const now = Date.now();
+        
+        // Skip if we notified about this edit recently (within 5 seconds)
+        if (lastEditNotifications.has(messageId)) {
+          const lastNotificationTime = lastEditNotifications.get(messageId);
+          if (now - lastNotificationTime < 5000) continue; // 5 second cooldown
+        }
+
+        const originalMsg = await store.loadMessage(chat, messageId) || {};
         const sender = key.participant || key.remoteJid;
         const senderName = await client.getName(sender);
         const contentType = getContentType(editedMsg);
@@ -149,7 +159,6 @@ if (!client.public && !mek.key.fromMe && chatUpdate.type === "notify") return;
                                  `✏️ *Edited:* ${editedContent?.text || editedContent?.caption || '(media message)'}\n` +
                                  `💬 *Chat Type:* ${isGroup ? 'Group' : 'DM'}`;
 
-        // Immediate notification in private mode
         if (currentAntiedit === 'private') {
           await client.sendMessage(client.user.id, { 
             text: notificationMessage,
@@ -163,7 +172,18 @@ if (!client.public && !mek.key.fromMe && chatUpdate.type === "notify") return;
           });
         }
         
-        console.log(chalk.green(`[ANTIEDIT] Detected edit from ${senderName} in ${isGroup ? 'group' : 'DM'}`));
+        // Record this notification
+        lastEditNotifications.set(messageId, now);
+        // Clean up old entries periodically
+        if (lastEditNotifications.size > 100) {
+          for (const [id, time] of lastEditNotifications) {
+            if (now - time > 30000) { // 30 second retention
+              lastEditNotifications.delete(id);
+            }
+          }
+        }
+        
+        console.log(chalk.green(`[ANTIEDIT] Detected edit from ${senderName}`));
       }
     }
   } catch (err) {
