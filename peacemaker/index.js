@@ -121,7 +121,8 @@ if (!client.public && !mek.key.fromMe && chatUpdate.type === "notify") return;
   });
 
 // Updated antiedit handler
-client.ev.on('messages.update', async (messageUpdates) => {
+
+        client.ev.on('messages.update', async (messageUpdates) => {
   try {
     const { antiedit: currentAntiedit } = await fetchSettings();
     
@@ -144,27 +145,25 @@ client.ev.on('messages.update', async (messageUpdates) => {
         const contentType = getContentType(editedMsg);
         const editedContent = editedMsg[contentType];
         
+        // Format the notification message
+        const notificationMessage = `🛡️ *PeaceHub Antiedit*\n\n` +
+                                 `👤 *Sender:* @${sender.split('@')[0]}\n` +
+                                 `📜 *Original:* ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
+                                 `✏️ *Edited:* ${editedContent?.text || editedContent?.caption || '(media message)'}\n` +
+                                 `💬 *Chat Type:* ${isGroup ? 'Group' : 'DM'}`;
+
         if (currentAntiedit === 'private') {
-  // Send to user who edited
-  await client.sendMessage(sender, { 
-    text: `📝 *Edit Notification*\n\n` +
-          `👤 *Editor:* @${sender.split('@')[0]}\n` +
-          `📍 *Chat Type:* ${isGroup ? 'Group' : 'Private DM'}\n\n` +
-          `🔹 *Original Message:*\n` +
-          `${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n\n` +
-          `🔸 *Edited To:*\n` +
-          `${editedContent?.text || editedContent?.caption || '(media message)'}`,
-    mentions: [sender]
-  });
-}
+          // Send to bot owner's private chat
+          const botOwnerJid = client.decodeJid(client.user.id);
+          await client.sendMessage(botOwnerJid, { 
+            text: notificationMessage,
+            mentions: [sender]
+          });
           
         } else if (currentAntiedit === 'chat') {
           // Send to the chat where edit happened
           await client.sendMessage(chat, { 
-            text: `📝 *Edit Detected*\n\n` +
-                  `User: @${sender.split('@')[0]}\n` +
-                  `Original: ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
-                  `Edited: ${editedContent?.text || editedContent?.caption || '(media message)'}`,
+            text: notificationMessage,
             mentions: [sender]
           });
         }
