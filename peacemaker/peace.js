@@ -875,6 +875,30 @@ case "antidelete": {
   reply(`✅ Antidelete has been turned *${text.toUpperCase()}*`);
 }
 break;	
+
+	// Add this to your existing commands in peace.js
+case 'antiedit': {
+  const validModes = ['off', 'private', 'chat'];
+  const newMode = (args[0] || '').toLowerCase();
+  
+  if (!validModes.includes(newMode)) {
+    return m.reply(`❌ Invalid mode. Usage: ${prefix}antiedit [off/private/chat]\n\n` +
+                  `• *off* - Disable edit detection\n` +
+                  `• *private* - Notify editor privately\n` +
+                  `• *chat* - Notify in chat`);
+  }
+
+  try {
+    // Update database with new antiedit setting
+    await updateSettings({ antiedit: newMode });
+    m.reply(`✅ Antiedit mode set to *${newMode}*`);
+    console.log(chalk.green(`Antiedit mode updated to ${newMode} by ${m.sender}`));
+  } catch (err) {
+    console.error(chalk.red('Error updating antiedit setting:', err));
+    m.reply('❌ Failed to update antiedit setting');
+  }
+  break;
+}	      
 		      
 case "gptdm": {
 	if(!Owner) throw NotOwner;
