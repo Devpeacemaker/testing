@@ -2,7 +2,9 @@ const { Pool } = require('pg');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000
 });
 
 const defaultSettings = {
@@ -22,8 +24,8 @@ const defaultSettings = {
   prefix: '.',
   autolike: 'on',
   autoview: 'on',
-  wapresence: 'recording', 
-  antiedit: 'private' 
+  wapresence: 'recording',
+  antiedit: 'private'
 };
 
 async function initializeDatabase() {
@@ -31,6 +33,7 @@ async function initializeDatabase() {
   console.log("📡 Connecting to PostgreSQL...");
 
   try {
+    // Create tables if not exists
     await client.query(`
       CREATE TABLE IF NOT EXISTS bot_settings (
         id SERIAL PRIMARY KEY,
@@ -39,18 +42,22 @@ async function initializeDatabase() {
       );
     `);
 
-    for (const [key, value] of Object.entries(defaultSettings)) {
+    // Insert default settings if not exists
+    const settingsEntries = Object.entries(defaultSettings);
+    for (const [key, value] of settingsEntries) {
       await client.query(
         `INSERT INTO bot_settings (key, value)
          VALUES ($1, $2)
-         ON CONFLICT (key) DO NOTHING;`,
+         ON CONFLICT (key) DO NOTHING`,
         [key, value]
       );
     }
 
-    console.log("✅ Database initialized.");
+    console.log("✅ Database initialized with default settings");
+    return true;
   } catch (err) {
-    console.error("❌ Initialization error:", err);
+    console.error("❌ Database initialization failed:", err.stack);
+    return false;
   } finally {
     client.release();
   }
@@ -58,55 +65,83 @@ async function initializeDatabase() {
 
 async function getSettings() {
   const client = await pool.connect();
-
   try {
     const result = await client.query(
-      `SELECT key, value FROM bot_settings WHERE key = ANY($1::text[])`,
-      [Object.keys(defaultSettings)]
+      `SELECT key, value FROM bot_settings`
     );
 
-    const settings = {};
+    const settings = { ...defaultSettings };
     for (const row of result.rows) {
-      settings[row.key] = row.value;
+      if (defaultSettings.hasOwnProperty(row.key)) {
+        settings[row.key] = row.value;
+      }
     }
 
-    console.log("✅ Settings fetched from DB.");
+    console.log("📋 Settings loaded from database");
     return settings;
-
   } catch (err) {
-    console.error("❌ Failed to fetch settings:", err);
+    console.error("❌ Failed to fetch settings:", err.stack);
     return defaultSettings;
-
   } finally {
     client.release();
   }
 }
 
 async function updateSetting(key, value) {
+  if (!defaultSettings.hasOwnProperty(key)) {
+    console.error(`🚨 Invalid setting key: ${key}`);
+    return false;
+  }
+
   const client = await pool.connect();
   try {
-    const validKeys = Object.keys(defaultSettings);
-    if (!validKeys.includes(key)) {
-      throw new Error(`Invalid setting key: ${key}`);
-    }
-
-    await client.query(
-      `UPDATE bot_settings SET value = $1 WHERE key = $2`,
-      [value, key]
+    const result = await client.query(
+      `INSERT INTO bot_settings (key, value)
+       VALUES ($1, $2)
+       ON CONFLICT (key) DO UPDATE
+       SET value = EXCLUDED.value
+       RETURNING *`,
+      [key, value]
     );
 
-   
-    return true;
+    if (result.rowCount === 1) {
+      console.log(`🔄 Setting updated: ${key}=${value}`);
+      return true;
+    }
+    return false;
   } catch (err) {
-    console.error("❌ Failed to update setting:", err.message || err);
+    console.error(`❌ Failed to update ${key}:`, err.stack);
     return false;
   } finally {
     client.release();
   }
 }
 
+async function testConnection() {
+  try {
+    const client = await pool.connect();
+    await client.query('SELECT 1');
+    client.release();
+    return true;
+  } catch (err) {
+    console.error('🔌 Database connection test failed:', err.stack);
+    return false;
+  }
+}
+
+// Health check and automatic reconnection
+setInterval(async () => {
+  if (!await testConnection()) {
+    console.log('Attempting to reconnect to database...');
+    await initializeDatabase();
+  }
+}, 60000); // Check every minute
+
 module.exports = {
+  pool,
   initializeDatabase,
   getSettings,
-  updateSetting
+  updateSetting,
+  testConnection,
+  defaultSettings
 };
