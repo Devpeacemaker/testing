@@ -22,7 +22,8 @@ const defaultSettings = {
   prefix: '.',
   autolike: 'on',
   autoview: 'on',
-  wapresence: 'recording'
+  wapresence: 'recording', 
+  antiedit: 'private' 
 };
 
 async function initializeDatabase() {
