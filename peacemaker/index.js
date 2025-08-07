@@ -1,34 +1,4 @@
-
 const {
-  default: peaceConnect,
-  useMultiFileAuthState,
-  DisconnectReason,
-  fetchLatestBaileysVersion,
-  downloadContentFromMessage,
-  jidDecode,
-  proto,
-  getContentType,
-} = require("@whiskeysockets/baileys");
-
-const pino = require("pino");
-const { Boom } = require("@hapi/boom");
-const fs = require("fs");
-const path = require('path');
-const axios = require("axios");
-const express = require("express");
-const chalk = require("chalk");
-const FileType = require("file-type");
-const figlet = require("figlet");
-const logger = pino({ level: 'silent' });
-const app = express();
-const _ = require("lodash");
-let lastTextTime = 0;
-const messageDelay = 3000;
-const currentTime = Date.now();
-const Events = require('../peacemaker/events');
-const authenticationn = require('../peacemaker/auth');
-const { initializeDatabase } = require('../Database/config');
-const fetchSettings = require('../const {
   default: peaceConnect,
   useMultiFileAuthState,
   DisconnectReason,
