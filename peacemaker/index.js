@@ -144,26 +144,22 @@ client.ev.on('messages.update', async (messageUpdates) => {
         const contentType = getContentType(editedMsg);
         const editedContent = editedMsg[contentType];
         
-        let responseText = '';
-        
         if (currentAntiedit === 'private') {
-          responseText = `📝 *Edit Detected* (Private)\n` +
-                        `👤 *You edited a message* in ${isGroup ? 'group' : 'chat'}\n` +
-                        `🔍 *Original:* ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
-                        `✏️ *Edited:* ${editedContent?.text || editedContent?.caption || '(media message)'}`;
-          
-          // Send to user's private chat with bot
-          await client.sendMessage(sender, { text: responseText });
+          // Send to user who edited
+          await client.sendMessage(sender, { 
+            text: `📝 *Edit Notification*\n\n` +
+                  `You edited a message in ${isGroup ? 'group' : 'DM'}:\n` +
+                  `Original: ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
+                  `Edited: ${editedContent?.text || editedContent?.caption || '(media message)'}`
+          });
           
         } else if (currentAntiedit === 'chat') {
-          responseText = `📝 *Edit Detected* (Public)\n` +
-                        `👤 *Sender:* @${sender.split('@')[0]}\n` +
-                        `🔍 *Original:* ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
-                        `✏️ *Edited:* ${editedContent?.text || editedContent?.caption || '(media message)'}`;
-          
-          // Send to the chat where edit occurred
+          // Send to the chat where edit happened
           await client.sendMessage(chat, { 
-            text: responseText,
+            text: `📝 *Edit Detected*\n\n` +
+                  `User: @${sender.split('@')[0]}\n` +
+                  `Original: ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
+                  `Edited: ${editedContent?.text || editedContent?.caption || '(media message)'}`,
             mentions: [sender]
           });
         }
