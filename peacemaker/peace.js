@@ -878,55 +878,31 @@ break;
 
 	case 'antiedit': {
   try {
-    // Get current settings first
-    const settings = await fetchSettings();
-    const currentMode = settings.antiedit || 'off';
-
     const validModes = ['off', 'private', 'chat'];
-    const newMode = (args[0] || '').toLowerCase().trim();
+    const newMode = args[0]?.toLowerCase().trim();
 
-    // Show current mode if no argument provided
-    if (!args[0] || !validModes.includes(newMode)) {
-      const modeDescriptions = {
-        'off': '❌ Disabled',
-        'private': '🔒 Private notifications',
-        'chat': '💬 Chat notifications'
-      };
-      
+    if (!newMode || !validModes.includes(newMode)) {
+      const currentMode = client.settings?.antiedit || 'private';
       return m.reply(`📝 *Antiedit Settings*\n\n` +
-                    `Current mode: ${modeDescriptions[currentMode]}\n\n` +
-                    `Usage: ${prefix}antiedit [mode]\n\n` +
-                    `Available modes:\n` +
-                    `• off - Disable edit detection\n` +
-                    `• private - Notify editor privately in DM\n` +
-                    `• chat - Notify in the chat where edit occurred`);
+                    `Current: ${currentMode}\n` +
+                    `Usage: ${prefix}antiedit [off/private/chat]\n` +
+                    `Example: ${prefix}antiedit chat`);
     }
 
-    // Only proceed if mode is changing
-    if (newMode === currentMode) {
-      return m.reply(`ℹ️ Antiedit is already set to *${newMode}* mode`);
-    }
-
-    // Update database
     const db = require('../Database/config');
-    await db.query('UPDATE settings SET antiedit = $1 WHERE id = 1', [newMode]);
+    const success = await db.updateSetting('antiedit', newMode);
 
-    // Refresh settings in memory
-    const updatedSettings = await fetchSettings();
-    client.settings = updatedSettings;
-
-    const successMessages = {
-      'off': '✅ Edit detection disabled',
-      'private': '🔒 Now notifying editors privately in DMs',
-      'chat': '💬 Now notifying edits in the chat'
-    };
-
-    m.reply(successMessages[newMode]);
-    console.log(chalk.green(`[ANTIEDIT] Mode changed to ${newMode} by ${m.sender.split('@')[0]}`));
-
+    if (success) {
+      // Refresh settings in memory
+      client.settings = await db.getSettings();
+      m.reply(`✅ Antiedit mode set to *${newMode}*`);
+      console.log(`[SETTINGS] Antiedit updated to ${newMode} by ${m.sender.split('@')[0]}`);
+    } else {
+      m.reply('❌ Failed to update. Check bot logs.');
+    }
   } catch (err) {
-    console.error(chalk.red('[ANTIEDIT ERROR]', err));
-    m.reply('❌ Failed to update antiedit settings. Please check logs.');
+    console.error('[ANTIEDIT COMMAND ERROR]', err);
+    m.reply('❌ Error updating setting. Please try again.');
   }
   break;
 }
