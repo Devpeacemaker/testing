@@ -145,13 +145,18 @@ client.ev.on('messages.update', async (messageUpdates) => {
         const editedContent = editedMsg[contentType];
         
         if (currentAntiedit === 'private') {
-          // Send to user who edited
-          await client.sendMessage(sender, { 
-            text: `📝 *Edit Notification*\n\n` +
-                  `You edited a message in ${isGroup ? 'group' : 'DM'}:\n` +
-                  `Original: ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
-                  `Edited: ${editedContent?.text || editedContent?.caption || '(media message)'}`
-          });
+  // Send to user who edited
+  await client.sendMessage(sender, { 
+    text: `📝 *Edit Notification*\n\n` +
+          `👤 *Editor:* @${sender.split('@')[0]}\n` +
+          `📍 *Chat Type:* ${isGroup ? 'Group' : 'Private DM'}\n\n` +
+          `🔹 *Original Message:*\n` +
+          `${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n\n` +
+          `🔸 *Edited To:*\n` +
+          `${editedContent?.text || editedContent?.caption || '(media message)'}`,
+    mentions: [sender]
+  });
+}
           
         } else if (currentAntiedit === 'chat') {
           // Send to the chat where edit happened
