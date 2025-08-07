@@ -20,7 +20,8 @@ async function fetchSettings() {
     autobio: data.autobio,
     badword: data.badword,
     gptdm: data.gptdm, 
-    anticall: data.anticall
+    anticall: data.anticall,
+    antiedit: data.antiedit
   };
 }
 
