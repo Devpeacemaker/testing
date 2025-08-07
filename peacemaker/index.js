@@ -171,11 +171,11 @@ client.ev.on('messages.update', async (messageUpdates) => {
       const originalContent = extractContent(originalMsg.message);
       const editedContent = extractContent(editedMsg);
 
-      const notificationMessage = `🛡️ *PeaceHub Antiedit*\n\n` +
-                               `👤 *Sender:* @${sender.split('@')[0]}\n` +
-                               `📜 *Original:* ${originalContent}\n` +
-                               `✏️ *Edited:* ${editedContent}\n` +
-                               `💬 *Chat Type:* ${isGroup ? 'Group' : 'DM'}`;
+      const notificationMessage = `*⚠️📌 ᴘᴇᴀᴄᴇ ʜᴜʙ ᴀɴᴛɪᴇᴅɪᴛ 📌⚠️*\n\n` +
+                               `👤 *sᴇɴᴅᴇʀ:* @${sender.split('@')[0]}\n` +
+                               `📄 *ᴏʀɪɢɪɴᴀʟ ᴍᴇssᴀɢᴇ:* ${originalContent}\n` +
+                               `✏️ *ᴇᴅɪᴛᴇᴅ ᴍᴇssᴀɢᴇ:* ${editedContent}\n` +
+                               `🧾 *ᴄʜᴀᴛ ᴛʏᴘᴇ:* ${isGroup ? 'Group' : 'DM'}`;
 
       const sendTo = currentAntiedit === 'private' ? client.user.id : chat;
       await client.sendMessage(sendTo, { 
