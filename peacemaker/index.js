@@ -120,15 +120,9 @@ if (!client.public && !mek.key.fromMe && chatUpdate.type === "notify") return;
     }
   });
 
-// Add at the top with other declarations
+// Add at top with other declarations
 const processedEdits = new Set();
-const cleanupInterval = 30000; // 30 seconds
-
-// Add this with your other interval functions
-setInterval(() => {
-  processedEdits.clear();
-  console.log(chalk.blue('[ANTIEDIT] Cleared edit tracking cache'));
-}, cleanupInterval);
+setInterval(() => processedEdits.clear(), 30000); // Clear every 30 seconds
 
 client.ev.on('messages.update', async (messageUpdates) => {
   try {
@@ -139,13 +133,12 @@ client.ev.on('messages.update', async (messageUpdates) => {
       const { key } = update;
       if (!key?.id) continue;
 
-      // Create unique identifier combining message ID and edit timestamp
-      const editIdentifier = `${key.id}-${key.fromMe ? 'me' : 'other'}`;
+      // Create unique fingerprint of this edit
+      const editFingerprint = `${key.id}-${key.remoteJid}-${key.fromMe ? 'me' : 'other'}`;
       
-      // Skip if we've already processed this edit
-      if (processedEdits.has(editIdentifier)) {
-        continue;
-      }
+      // Skip duplicates
+      if (processedEdits.has(editFingerprint)) continue;
+      processedEdits.add(editFingerprint);
 
       const chat = key.remoteJid;
       const isGroup = chat.endsWith('@g.us');
@@ -156,31 +149,41 @@ client.ev.on('messages.update', async (messageUpdates) => {
 
       const originalMsg = await store.loadMessage(chat, key.id) || {};
       const sender = key.participant || key.remoteJid;
-      const senderName = await client.getName(sender);
-      const contentType = getContentType(editedMsg);
-      const editedContent = editedMsg[contentType];
       
+      // Enhanced content extractor
+      const extractContent = (msg) => {
+        if (!msg) return '[Deleted]';
+        const type = Object.keys(msg)[0];
+        switch(type) {
+          case 'conversation': return msg.conversation;
+          case 'extendedTextMessage': 
+            return msg.extendedTextMessage.text + 
+                  (msg.extendedTextMessage.contextInfo?.quotedMessage ? ' (with quoted message)' : '');
+          case 'imageMessage': return `🖼️ ${msg.imageMessage.caption || 'Image'}`;
+          case 'videoMessage': return `🎥 ${msg.videoMessage.caption || 'Video'}`;
+          case 'audioMessage': return msg.audioMessage.ptt ? '🎤 Voice Message' : '🔊 Audio';
+          case 'documentMessage': return `📄 ${msg.documentMessage.fileName || 'Document'}`;
+          case 'stickerMessage': return '🖼️ Sticker';
+          default: return `[${type.replace('Message', '')}]`;
+        }
+      };
+
+      const originalContent = extractContent(originalMsg.message);
+      const editedContent = extractContent(editedMsg);
+
       const notificationMessage = `🛡️ *PeaceHub Antiedit*\n\n` +
                                `👤 *Sender:* @${sender.split('@')[0]}\n` +
-                               `📜 *Original:* ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media)'}\n` +
-                               `✏️ *Edited:* ${editedContent?.text || editedContent?.caption || '(media)'}\n` +
+                               `📜 *Original:* ${originalContent}\n` +
+                               `✏️ *Edited:* ${editedContent}\n` +
                                `💬 *Chat Type:* ${isGroup ? 'Group' : 'DM'}`;
 
-      if (currentAntiedit === 'private') {
-        await client.sendMessage(client.user.id, { 
-          text: notificationMessage,
-          mentions: [sender]
-        });
-      } else if (currentAntiedit === 'chat') {
-        await client.sendMessage(chat, { 
-          text: notificationMessage,
-          mentions: [sender]
-        });
-      }
-      
-      // Mark this edit as processed
-      processedEdits.add(editIdentifier);
-      console.log(chalk.green(`[ANTIEDIT] Processed edit from ${senderName}`));
+      const sendTo = currentAntiedit === 'private' ? client.user.id : chat;
+      await client.sendMessage(sendTo, { 
+        text: notificationMessage,
+        mentions: [sender]
+      });
+
+      console.log(chalk.green(`[ANTIEDIT] Reported edit from ${sender.split('@')[0]}`));
     }
   } catch (err) {
     console.error(chalk.red('[ANTIEDIT ERROR]', err));
