@@ -122,54 +122,68 @@ if (!client.public && !mek.key.fromMe && chatUpdate.type === "notify") return;
 
 // Add at top with other declarations
 const processedEdits = new Set();
-setInterval(() => processedEdits.clear(), 30000); // Clear every 30 seconds
+const EDIT_COOLDOWN = 5000; // 5 seconds cooldown
 
 client.ev.on('messages.update', async (messageUpdates) => {
   try {
     const { antiedit: currentAntiedit } = await fetchSettings();
     if (currentAntiedit === 'off') return;
+
+    const now = Date.now();
     
     for (const update of messageUpdates) {
-      const { key } = update;
-      if (!key?.id) continue;
+      const { key, update: { message } } = update;
+      if (!key?.id || !message) continue;
 
-      // Create unique fingerprint of this edit
-      const editFingerprint = `${key.id}-${key.remoteJid}-${key.fromMe ? 'me' : 'other'}`;
+      const editId = `${key.id}-${key.remoteJid}`;
       
-      // Skip duplicates
-      if (processedEdits.has(editFingerprint)) continue;
-      processedEdits.add(editFingerprint);
+      // Skip if recently processed
+      if (processedEdits.has(editId)) {
+        const [timestamp] = processedEdits.get(editId);
+        if (now - timestamp < EDIT_COOLDOWN) continue;
+      }
 
       const chat = key.remoteJid;
       const isGroup = chat.endsWith('@g.us');
-      const message = update.update?.message;
-      const editedMsg = message?.editedMessage?.message || message?.editedMessage;
-
+      const editedMsg = message.editedMessage?.message || message.editedMessage;
       if (!editedMsg) continue;
 
+      // Get both messages properly
       const originalMsg = await store.loadMessage(chat, key.id) || {};
       const sender = key.participant || key.remoteJid;
-      
+      const senderName = await client.getName(sender);
+
       // Enhanced content extractor
-      const extractContent = (msg) => {
+      const getContent = (msg) => {
         if (!msg) return '[Deleted]';
         const type = Object.keys(msg)[0];
+        const content = msg[type];
+        
         switch(type) {
-          case 'conversation': return msg.conversation;
+          case 'conversation': 
+            return content;
           case 'extendedTextMessage': 
-            return msg.extendedTextMessage.text + 
-                  (msg.extendedTextMessage.contextInfo?.quotedMessage ? ' (with quoted message)' : '');
-          case 'imageMessage': return `🖼️ ${msg.imageMessage.caption || 'Image'}`;
-          case 'videoMessage': return `🎥 ${msg.videoMessage.caption || 'Video'}`;
-          case 'audioMessage': return msg.audioMessage.ptt ? '🎤 Voice Message' : '🔊 Audio';
-          case 'documentMessage': return `📄 ${msg.documentMessage.fileName || 'Document'}`;
-          case 'stickerMessage': return '🖼️ Sticker';
-          default: return `[${type.replace('Message', '')}]`;
+            return content.text + 
+                  (content.contextInfo?.quotedMessage ? ' (with quoted message)' : '');
+          case 'imageMessage': 
+            return `🖼️ ${content.caption || 'Image'}`;
+          case 'videoMessage': 
+            return `🎥 ${content.caption || 'Video'}`;
+          case 'documentMessage': 
+            return `📄 ${content.fileName || 'Document'}`;
+          default: 
+            return `[${type.replace('Message', '')}]`;
         }
       };
 
-      const originalContent = extractContent(originalMsg.message);
-      const editedContent = extractContent(editedMsg);
+      const originalContent = getContent(originalMsg.message);
+      const editedContent = getContent(editedMsg);
+
+      // Only proceed if content actually changed
+      if (originalContent === editedContent) {
+        console.log(chalk.yellow(`[ANTIEDIT] No content change detected for ${editId}`));
+        continue;
+      }
 
       const notificationMessage = `*⚠️📌 ᴘᴇᴀᴄᴇ ʜᴜʙ ᴀɴᴛɪᴇᴅɪᴛ 📌⚠️*\n\n` +
                                `👤 *sᴇɴᴅᴇʀ:* @${sender.split('@')[0]}\n` +
@@ -183,10 +197,19 @@ client.ev.on('messages.update', async (messageUpdates) => {
         mentions: [sender]
       });
 
-      console.log(chalk.green(`[ANTIEDIT] Reported edit from ${sender.split('@')[0]}`));
+      // Update tracking with timestamp
+      processedEdits.set(editId, [now, originalContent, editedContent]);
+      console.log(chalk.green(`[ANTIEDIT] Reported edit from ${senderName}`));
+    }
+
+    // Cleanup old entries
+    for (const [id, data] of processedEdits) {
+      if (now - data[0] > 60000) { // 1 minute retention
+        processedEdits.delete(id);
+      }
     }
   } catch (err) {
-    console.error(chalk.red('[ANTIEDIT ERROR]', err));
+    console.error(chalk.red('[ANTIEDIT ERROR]', err.stack));
   }
 });
 
