@@ -332,12 +332,13 @@ if (autoread === 'on' && !m.isGroup) {
       if (itsMe && mek.key.id.startsWith("BAE5") && mek.key.id.length === 16 && !m.isGroup) return;
 //========================================================================================================================//
 if (antidelete === "on") {
-        if (mek.message?.protocolMessage?.key) {
-          await handleMessageRevocation(client, mek);
-        } else {
-          handleIncomingMessage(mek);
-        }
-	  }
+  if (
+    mek.message?.protocolMessage &&
+    mek.message.protocolMessage.type === proto.Message.ProtocolMessage.Type.REVOKE
+  ) {
+    await handleMessageRevocation(client, mek); // Deleted message only
+  }
+}
 //========================================================================================================================//
  // Corrected sendContact function using available client methods
 client.sendContact = async (chatId, numbers, text = '', options = {}) => {
