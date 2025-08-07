@@ -876,29 +876,41 @@ case "antidelete": {
 }
 break;	
 
-	// Add this to your existing commands in peace.js
-case 'antiedit': {
+	case 'antiedit': {
+  if (!m.isAdmin) {
+    return m.reply('❌ This command is only for admins');
+  }
+
   const validModes = ['off', 'private', 'chat'];
   const newMode = (args[0] || '').toLowerCase();
   
   if (!validModes.includes(newMode)) {
     return m.reply(`❌ Invalid mode. Usage: ${prefix}antiedit [off/private/chat]\n\n` +
                   `• *off* - Disable edit detection\n` +
-                  `• *private* - Notify editor privately\n` +
-                  `• *chat* - Notify in chat`);
+                  `• *private* - Notify editor privately in their DM\n` +
+                  `• *chat* - Notify in the chat where edit occurred`);
   }
 
   try {
     // Update database with new antiedit setting
-    await updateSettings({ antiedit: newMode });
-    m.reply(`✅ Antiedit mode set to *${newMode}*`);
+    const db = require('../Database/config');
+    await db.query('UPDATE settings SET antiedit = $1 WHERE id = 1', [newMode]);
+    
+    m.reply(`✅ Antiedit mode updated to *${newMode}*`);
     console.log(chalk.green(`Antiedit mode updated to ${newMode} by ${m.sender}`));
+    
+    // Refresh settings in memory
+    const fetchSettings = require('../Database/fetchSettings');
+    const settings = await fetchSettings();
+    client.settings = settings;
+    
   } catch (err) {
     console.error(chalk.red('Error updating antiedit setting:', err));
-    m.reply('❌ Failed to update antiedit setting');
+    m.reply('❌ Failed to update antiedit setting. Check console for details.');
   }
   break;
-}	      
+}
+  
 		      
 case "gptdm": {
 	if(!Owner) throw NotOwner;
