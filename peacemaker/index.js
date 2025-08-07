@@ -137,42 +137,37 @@ if (!client.public && !mek.key.fromMe && chatUpdate.type === "notify") return;
       const editedMsg = message.editedMessage?.message || message.editedMessage;
 
       if (editedMsg) {
-        const originalMsg = await store.loadMessage(chat, key.id);
-        if (!originalMsg) continue;
-
+        const originalMsg = await store.loadMessage(chat, key.id) || {};
         const sender = key.participant || key.remoteJid;
         const senderName = await client.getName(sender);
         const contentType = getContentType(editedMsg);
         const editedContent = editedMsg[contentType];
         
-        // Format the notification message
         const notificationMessage = `🛡️ *PeaceHub Antiedit*\n\n` +
                                  `👤 *Sender:* @${sender.split('@')[0]}\n` +
                                  `📜 *Original:* ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
                                  `✏️ *Edited:* ${editedContent?.text || editedContent?.caption || '(media message)'}\n` +
                                  `💬 *Chat Type:* ${isGroup ? 'Group' : 'DM'}`;
 
+        // Immediate notification in private mode
         if (currentAntiedit === 'private') {
-          // Send to bot owner's private chat
-          const botOwnerJid = client.decodeJid(client.user.id);
-          await client.sendMessage(botOwnerJid, { 
+          await client.sendMessage(client.user.id, { 
             text: notificationMessage,
             mentions: [sender]
           });
           
         } else if (currentAntiedit === 'chat') {
-          // Send to the chat where edit happened
           await client.sendMessage(chat, { 
             text: notificationMessage,
             mentions: [sender]
           });
         }
         
-        console.log(chalk.yellow(`Edit detected from ${senderName} in ${isGroup ? 'group' : 'DM'}`));
+        console.log(chalk.green(`[ANTIEDIT] Detected edit from ${senderName} in ${isGroup ? 'group' : 'DM'}`));
       }
     }
   } catch (err) {
-    console.error('Error in antiedit handler:', err);
+    console.error(chalk.red('[ANTIEDIT ERROR]', err));
   }
 });
 
