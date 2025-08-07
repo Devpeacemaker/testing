@@ -120,61 +120,61 @@ if (!client.public && !mek.key.fromMe && chatUpdate.type === "notify") return;
     }
   });
 
-  // Antiedit handler
-  client.ev.on('messages.update', async (messageUpdates) => {
-    try {
-      const { antiedit: currentAntiedit } = await fetchSettings();
-      
-      if (currentAntiedit === 'off') return;
-      
-      for (const update of messageUpdates) {
-        const { key, update: { message } } = update;
-        if (!message) continue;
+// Updated antiedit handler
+client.ev.on('messages.update', async (messageUpdates) => {
+  try {
+    const { antiedit: currentAntiedit } = await fetchSettings();
+    
+    if (currentAntiedit === 'off') return;
+    
+    for (const update of messageUpdates) {
+      const { key, update: { message } } = update;
+      if (!message) continue;
 
-        const chat = key.remoteJid;
-        const isGroup = chat.endsWith('@g.us');
-        const editedMsg = message.editedMessage?.message || message.editedMessage;
+      const chat = key.remoteJid;
+      const isGroup = chat.endsWith('@g.us');
+      const editedMsg = message.editedMessage?.message || message.editedMessage;
 
-        if (editedMsg) {
-          const originalMsg = await store.loadMessage(chat, key.id);
-          if (!originalMsg) continue;
+      if (editedMsg) {
+        const originalMsg = await store.loadMessage(chat, key.id);
+        if (!originalMsg) continue;
 
-          const sender = key.participant || key.remoteJid;
-          const senderName = await client.getName(sender);
-          const contentType = getContentType(editedMsg);
-          const editedContent = editedMsg[contentType];
+        const sender = key.participant || key.remoteJid;
+        const senderName = await client.getName(sender);
+        const contentType = getContentType(editedMsg);
+        const editedContent = editedMsg[contentType];
+        
+        let responseText = '';
+        
+        if (currentAntiedit === 'private') {
+          responseText = `📝 *Edit Detected* (Private)\n` +
+                        `👤 *You edited a message* in ${isGroup ? 'group' : 'chat'}\n` +
+                        `🔍 *Original:* ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
+                        `✏️ *Edited:* ${editedContent?.text || editedContent?.caption || '(media message)'}`;
           
-          let responseText = '';
+          // Send to user's private chat with bot
+          await client.sendMessage(sender, { text: responseText });
           
-          if (currentAntiedit === 'private') {
-            responseText = `📝 *Edit Detected* (Private)\n` +
-                          `👤 *Sender:* @${sender.split('@')[0]}\n` +
-                          `🔍 *Original:* ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
-                          `✏️ *Edited:* ${editedContent?.text || editedContent?.caption || '(media message)'}`;
-            
-            // Send only to the user who edited
-            await client.sendMessage(sender, { text: responseText });
-            
-          } else if (currentAntiedit === 'chat') {
-            responseText = `📝 *Edit Detected* (Public)\n` +
-                          `👤 *Sender:* @${sender.split('@')[0]}\n` +
-                          `🔍 *Original:* ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
-                          `✏️ *Edited:* ${editedContent?.text || editedContent?.caption || '(media message)'}`;
-            
-            // Send to the chat where edit occurred
-            await client.sendMessage(chat, { 
-              text: responseText,
-              mentions: [sender]
-            });
-          }
+        } else if (currentAntiedit === 'chat') {
+          responseText = `📝 *Edit Detected* (Public)\n` +
+                        `👤 *Sender:* @${sender.split('@')[0]}\n` +
+                        `🔍 *Original:* ${originalMsg.message?.conversation || originalMsg.message?.extendedTextMessage?.text || '(media message)'}\n` +
+                        `✏️ *Edited:* ${editedContent?.text || editedContent?.caption || '(media message)'}`;
           
-          console.log(chalk.yellow(`Edit detected from ${senderName} in ${isGroup ? 'group' : 'DM'}`));
+          // Send to the chat where edit occurred
+          await client.sendMessage(chat, { 
+            text: responseText,
+            mentions: [sender]
+          });
         }
+        
+        console.log(chalk.yellow(`Edit detected from ${senderName} in ${isGroup ? 'group' : 'DM'}`));
       }
-    } catch (err) {
-      console.error('Error in antiedit handler:', err);
     }
-  });
+  } catch (err) {
+    console.error('Error in antiedit handler:', err);
+  }
+});
 
   // Handle error
   const unhandledRejections = new Map();
