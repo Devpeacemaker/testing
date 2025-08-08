@@ -274,79 +274,69 @@ async function handleAntiDelete(client, revocationMessage) {
       
       try {
         const buffer = await client.downloadMediaMessage(originalMessage);
-        await client.sendMessage(sendTo, { 
-          video: buffer,
-          caption: notification
-        });
-      } catch {
-        await client.sendMessage(sendTo, { text: notification + '\n\n⚠️ Could not recover video' });
-      }
+// 1. Add this at the top of your file (with other constants)
+const messageStore = new Map();
+
+// 2. Add this message tracking handler
+client.ev.on('messages.upsert', async ({ messages }) => {
+  for (const message of messages) {
+    // Store all messages for anti-delete tracking
+    if (message.key && message.key.id) {
+      messageStore.set(message.key.id, {
+        ...message,
+        timestamp: new Date()
+      });
     }
-    else if (msgContent?.stickerMessage) {
-      // Sticker
-      notification += '[Sticker]';
-      try {
-        const buffer = await client.downloadMediaMessage(originalMessage);
-        await client.sendMessage(sendTo, { 
-          sticker: buffer,
-          caption: notification
-        });
-      } catch {
-        await client.sendMessage(sendTo, { text: notification });
-      }
-    }
-    else if (msgContent?.documentMessage) {
-      // Document
-      const docMsg = msgContent.documentMessage;
-      notification += `[Document: ${docMsg.fileName || 'File'}]`;
-      
-      try {
-        const buffer = await client.downloadMediaMessage(originalMessage);
-        await client.sendMessage(sendTo, { 
-          document: buffer,
-          fileName: docMsg.fileName || 'file',
-          caption: notification
-        });
-      } catch {
-        await client.sendMessage(sendTo, { text: notification + '\n\n⚠️ Could not recover document' });
-      }
-    }
-    else if (msgContent?.audioMessage) {
-      // Audio
-      notification += `[Audio ${msgContent.audioMessage.ptt ? '(Voice Note)' : ''}]`;
-      
-      try {
-        const buffer = await client.downloadMediaMessage(originalMessage);
-        await client.sendMessage(sendTo, { 
-          audio: buffer,
-          ptt: msgContent.audioMessage.ptt,
-          mimetype: 'audio/mpeg',
-          caption: notification
-        });
-      } catch {
-        await client.sendMessage(sendTo, { text: notification + '\n\n⚠️ Could not recover audio' });
-      }
-    }
-    else {
-      // Unsupported type
-      notification += '[Unsupported message type]';
-      await client.sendMessage(sendTo, { text: notification });
-    }
-  } catch (error) {
-    console.error('Anti-delete error:', error);
+    // Keep your existing message handling here
   }
-}
+});
 
-// User settings management
-const userSettingsMap = new Map();
-
-function getUserSettings(userId) {
-  return userSettingsMap.get(userId) || { antidelete: 'private' };
-}
-
-function setUserSettings(userId, settings) {
-  userSettingsMap.set(userId, settings);
-}
+// 3. Add this anti-delete detection handler
+client.ev.on('messages.update', async (updates) => {
+  for (const update of updates) {
+    if (update.update?.messageStubType === 7) { // 7 = message revoked
+      try {
+        const settings = await getSettings();
+        if (settings.antidelete === 'off') continue;
+        
+        const originalMessage = messageStore.get(update.key.id);
+        if (!originalMessage) continue;
+        
+        // Extract and format information
+        const remoteJid = update.key.remoteJid;
+        const deleter = update.participant || update.key.participant || remoteJid;
+        const sender = originalMessage.key.participant || originalMessage.key.remoteJid;
+        
+        // Build notification
+        let notification = `🚨 *Anti-Delete Alert* 🚨\n\n` +
+          `• *Sender:* @${sender.split('@')[0]}\n` +
+          `• *Deleted by:* @${deleter.split('@')[0]}\n` +
+          `• *Sent at:* ${originalMessage.timestamp.toLocaleString()}\n` +
+          `• *Deleted at:* ${new Date().toLocaleString()}\n\n` +
+          `• *Content:* `;
+        
+        // Determine destination based on mode
+        const sendTo = settings.antidelete === 'chat' ? remoteJid : client.user.id;
+        
+        // Handle different message types
+        const msgContent = originalMessage.message;
+        
+        if (msgContent?.conversation) {
+          notification += msgContent.conversation;
+          await client.sendMessage(sendTo, { text: notification });
+        }
+        else if (msgContent?.extendedTextMessage?.text) {
+          notification += msgContent.extendedTextMessage.text;
+          await client.sendMessage(sendTo, { text: notification });
+        }
+        // Add other media type handlers here...
+        
+      } catch (error) {
+        console.error('Anti-delete error:', error);
+      }
+    }
+  }
+});
 //========================================================================================================================//
 //========================================================================================================================//	  
     // Push Message To Console
