@@ -177,192 +177,133 @@ function handleIncomingMessage(message) {
 } 
 
 
+      
+      async function handleMessageRevocation(client, revocationMessage) {
+  const remoteJid = revocationMessage.key.remoteJid;
+  const messageId = revocationMessage.message.protocolMessage.key.id;
 
+  const chatData = loadChatData(remoteJid, messageId);
+  const originalMessage = chatData[0];
 
-    
-
-let antideleteMode = 'private'; // Can be 'private', 'chat', or 'off'
-
-// Function to set the anti-delete mode
-function setAntideleteMode(mode) {
-  if (['private', 'chat', 'off'].includes(mode)) {
-    antideleteMode = mode;
-    return `Anti-delete mode set to ${mode}`;
-  }
-  return 'Invalid mode. Use "private", "chat", or "off"';
-}
-
-// Enhanced anti-delete handler
-async function handleMessageRevocation(client, revocationMessage) {
-  if (antideleteMode === 'off') return;
-  
-  const originalMessage = revocationMessage.message?.protocolMessage?.editedMessage || 
-                         revocationMessage.message?.protocolMessage?.key;
-  
-  if (!originalMessage) return;
-
-  try {
+  if (originalMessage) {
     const deletedBy = revocationMessage.participant || revocationMessage.key.participant || revocationMessage.key.remoteJid;
     const sentBy = originalMessage.key.participant || originalMessage.key.remoteJid;
-    
-    // Format JIDs for display
+
     const deletedByFormatted = `@${deletedBy.split('@')[0]}`;
     const sentByFormatted = `@${sentBy.split('@')[0]}`;
-    
-    // Get timestamps
-    const messageTimestamp = new Date(1000 * (originalMessage.messageTimestamp || originalMessage.key.timestamp));
-    const deletionTimestamp = new Date();
-    const timeDiff = Math.floor((deletionTimestamp - messageTimestamp) / 1000);
-    
-    // Base notification text
-    let notificationText = `🚨 *Anti-Delete Alert* 🚨\n\n` +
-      `• *Sender:* ${sentByFormatted}\n` +
-      `• *Deleted by:* ${deletedByFormatted}\n` +
-      `• *Sent at:* ${messageTimestamp.toLocaleString()}\n` +
-      `• *Deleted at:* ${deletionTimestamp.toLocaleString()}\n` +
-      `• *Time between:* ${timeDiff} seconds\n\n` +
-      `• *Deleted content:*\n`;
 
-    // Determine where to send the notification
-    const sendTo = antideleteMode === 'private' ? client.user.id : revocationMessage.key.remoteJid;
-    
-    // Skip if bot deleted its own message
-    if (deletedBy.includes(client.user.id.split(':')[0] + '@s.whatsapp.net')) return;
-    
-    // Handle different message types
-    if (originalMessage.message?.conversation) {
-      // Text message
-      notificationText += originalMessage.message.conversation;
-      await client.sendMessage(sendTo, { text: notificationText });
-    } 
-    else if (originalMessage.message?.extendedTextMessage) {
-      // Extended text message (quoted messages)
-      notificationText += originalMessage.message.extendedTextMessage.text;
-      await client.sendMessage(sendTo, { text: notificationText });
-    }
-    else if (originalMessage.message?.imageMessage) {
-      // Image message
-      const imgMsg = originalMessage.message.imageMessage;
-      notificationText += `[Image]${imgMsg.caption ? `\nCaption: ${imgMsg.caption}` : ''}`;
-      
-      try {
-        const buffer = await client.downloadMediaMessage(imgMsg);
-        await client.sendMessage(sendTo, { 
-          image: buffer,
-          caption: notificationText
-        });
-      } catch (error) {
-        notificationText += `\n⚠️ Could not recover image (media expired)`;
-        await client.sendMessage(sendTo, { text: notificationText });
+    let notificationText = `🚨ᴘᴇᴀᴄᴇ ʜᴜʙ ᴀɴᴛɪᴅᴇʟᴇᴛᴇ🚨\n\n` +
+      ` ᴅᴇʟᴇᴛᴇᴅ ʙʏ: ${deletedByFormatted}\n\n`;
+
+try {
+	    
+if (deletedBy.includes(botNumber)) return;
+	    
+      if (originalMessage.message?.conversation) {
+// Text message
+        const messageText = originalMessage.message.conversation;
+        notificationText += ` ᴅᴇʟᴇᴛᴇᴅ ᴍᴇssᴀɢᴇ: ${messageText}`;
+        await client.sendMessage(client.user.id, { text: notificationText });
+      } 
+      else if (originalMessage.message?.extendedTextMessage) {
+// Extended text message (quoted messages)
+        const messageText = originalMessage.message.extendedTextMessage.text;
+        notificationText += ` ᴅᴇʟᴇᴛᴇᴅ ᴄᴏɴᴛᴇɴᴛ: ${messageText}`;
+        await client.sendMessage(client.user.id, { text: notificationText });
       }
-    }
-    else if (originalMessage.message?.videoMessage) {
-      // Video message
-      const vidMsg = originalMessage.message.videoMessage;
-      notificationText += `[Video]${vidMsg.caption ? `\nCaption: ${vidMsg.caption}` : ''}`;
+      else if (originalMessage.message?.imageMessage) {
+// Image message
+	const ImageM = originalMessage.message.imageMessage;
+        notificationText += ` ᴅᴇʟᴇᴛᴇᴅ ᴍᴇᴅɪᴀ: [Image]`;
+        try {
+          const buffer = await client.downloadMediaMessage(ImageM);
+await client.sendMessage(client.user.id, { 
+            image: buffer,
+	    caption: `${notificationText}\n\nImage caption: ${ImageM.caption}`
+          });
+        } catch (mediaError) {
+          console.error('Failed to download image:', mediaError);
+          notificationText += `\n\n⚠️ Could not recover deleted image (media expired)`;
+          await client.sendMessage(client.user.id, { text: notificationText });
+        }
+      } 
+      else if (originalMessage.message?.videoMessage) {
+// Video message
+	const VideoM = originalMessage.message.videoMessage;    
+        notificationText += ` ᴅᴇʟᴇᴛᴇᴅ ᴍᴇᴅɪᴀ: [Video]`;
+        try {
+          const buffer = await client.downloadMediaMessage(VideoM);
+await client.sendMessage(client.user.id, { 
+            video: buffer, 
+            caption: `${notificationText}\n\nVideo caption: ${VideoM.caption}`
+          });
+        } catch (mediaError) {
+          console.error('Failed to download video:', mediaError);
+          notificationText += `\n\n⚠️ Could not recover deleted video (media expired)`;
+          await client.sendMessage(client.user.id, { text: notificationText });
+        }
+      } else if (originalMessage.message?.stickerMessage) {
+// Sticker message
+      const StickerM = originalMessage.message.stickerMessage;      
+      notificationText += ` ᴅᴇʟᴇᴛᴇᴅ ᴍᴇᴅɪᴀ: [Sticker]`;
+      const buffer = await client.downloadMediaMessage(StickerM);      
+      await client.sendMessage(client.user.id, { sticker: buffer, 
+contextInfo: {
+          externalAdReply: {
+          title: notificationText,
+          body: `ᴅᴇʟᴇᴛᴇᴅ ʙʏ: ${deletedByFormatted}`,
+          thumbnailUrl: "https://files.catbox.moe/yusei5.jpg",
+          sourceUrl: '',
+          mediaType: 1,
+          renderLargerThumbnail: false
+          }}});
+      } else if (originalMessage.message?.documentMessage) {
+// Document message
+        notificationText += ` ᴅᴇʟᴇᴛᴇᴅ ᴍᴇᴅɪᴀ: [Document]`;
+        const docMessage = originalMessage.message.documentMessage;
+        const fileName = docMessage.fileName;
+	const mimetype = docMessage.mimetype;     
+        const buffer = await client.downloadMediaMessage(docMessage);
+        
+ await client.sendMessage(client.user.id, { 
+            document: buffer, 
+            fileName: fileName,
+            mimetype: mimetype,
+contextInfo: {
+          externalAdReply: {
+          title: notificationText,
+          body: `ᴅᴇʟᴇᴛᴇᴅ ʙʏ: ${deletedByFormatted}`,
+          thumbnailUrl: "https://files.catbox.moe/yusei5.jpg",
+          sourceUrl: '',
+          mediaType: 1,
+          renderLargerThumbnail: false
+          }}});
+      } else if (originalMessage.message?.audioMessage) {
+// Audio message     
+	const AudioM = originalMessage.message.audioMessage;    
+	notificationText += ` ᴅᴇʟᴇᴛᴇᴅ ᴍᴇᴅɪᴀ: [Audio]`;
       
-      try {
-        const buffer = await client.downloadMediaMessage(vidMsg);
-        await client.sendMessage(sendTo, { 
-          video: buffer, 
-          caption: notificationText
-        });
-      } catch (error) {
-        notificationText += `\n⚠️ Could not recover video (media expired)`;
-        await client.sendMessage(sendTo, { text: notificationText });
-      }
-    }
-    else if (originalMessage.message?.stickerMessage) {
-      // Sticker message
-      const stickerMsg = originalMessage.message.stickerMessage;
-      notificationText += `[Sticker]`;
-      
-      try {
-        const buffer = await client.downloadMediaMessage(stickerMsg);
-        await client.sendMessage(sendTo, { 
-          sticker: buffer,
-          contextInfo: {
-            externalAdReply: {
-              title: "Deleted Sticker",
-              body: `Deleted by ${deletedByFormatted}`,
-              thumbnailUrl: "https://example.com/sticker-thumbnail.jpg",
-              mediaType: 1
-            }
-          }
-        });
-        await client.sendMessage(sendTo, { text: notificationText });
-      } catch (error) {
-        notificationText += `\n⚠️ Could not recover sticker`;
-        await client.sendMessage(sendTo, { text: notificationText });
-      }
-    }
-    else if (originalMessage.message?.documentMessage) {
-      // Document message
-      const docMsg = originalMessage.message.documentMessage;
-      notificationText += `[Document] ${docMsg.fileName || 'Unnamed file'}`;
-      
-      try {
-        const buffer = await client.downloadMediaMessage(docMsg);
-        await client.sendMessage(sendTo, { 
-          document: buffer,
-          fileName: docMsg.fileName || 'deleted_file',
-          mimetype: docMsg.mimetype,
-          caption: notificationText
-        });
-      } catch (error) {
-        notificationText += `\n⚠️ Could not recover document`;
-        await client.sendMessage(sendTo, { text: notificationText });
-      }
-    }
-    else if (originalMessage.message?.audioMessage) {
-      // Audio message
-      const audioMsg = originalMessage.message.audioMessage;
-      notificationText += `[Audio] ${audioMsg.ptt ? 'Voice Note' : 'Audio File'}`;
-      
-      try {
-        const buffer = await client.downloadMediaMessage(audioMsg);
-        await client.sendMessage(sendTo, { 
-          audio: buffer,
-          ptt: audioMsg.ptt,
-          mimetype: 'audio/mpeg',
-          contextInfo: {
-            externalAdReply: {
-              title: "Deleted Audio",
-              body: `Deleted by ${deletedByFormatted}`,
-              mediaType: 2
-            }
-          }
-        });
-        await client.sendMessage(sendTo, { text: notificationText });
-      } catch (error) {
-        notificationText += `\n⚠️ Could not recover audio`;
-        await client.sendMessage(sendTo, { text: notificationText });
-      }
-    }
-    else {
-      // Unsupported message type
-      notificationText += `[Unsupported message type]`;
-      await client.sendMessage(sendTo, { text: notificationText });
-    }
-  } catch (error) {
-    console.error('Error in anti-delete handler:', error);
-    if (antideleteMode !== 'off') {
-      await client.sendMessage(
-        antideleteMode === 'private' ? client.user.id : revocationMessage.key.remoteJid,
-        { text: '⚠️ Error processing deleted message' }
-      );
+      const buffer = await client.downloadMediaMessage(AudioM);
+      const isPTT = AudioM.ptt === true;
+      await client.sendMessage(client.user.id, { audio: buffer, ptt: isPTT, mimetype: 'audio/mpeg', 
+contextInfo: {
+          externalAdReply: {
+          title: notificationText,
+          body: `ᴅᴇʟᴇᴛᴇᴅ ʙʏ: ${deletedByFormatted}`,
+          thumbnailUrl: "https://files.catbox.moe/yusei5.jpg",
+          sourceUrl: '',
+          mediaType: 1,
+          renderLargerThumbnail: false
+          }}});
+      }	      
+    } catch (error) {
+      console.error('Error handling deleted message:', error);
+      notificationText += `\n\n⚠️ Error recovering deleted content 😓`;
+      await client.sendMessage(client.user.id, { text: notificationText });
     }
   }
 }
-
-// Connection with your existing code
-if (antideleteMode !== 'off') {
-  if (mek.message?.protocolMessage?.key) {
-    await handleMessageRevocation(client, mek);
-  } else {
-    handleIncomingMessage(mek);
-  }
-}
+        
 //========================================================================================================================//
 //========================================================================================================================//	  
     // Push Message To Console
@@ -393,86 +334,25 @@ if (autoread === 'on' && !m.isGroup) {
     }
       if (itsMe && mek.key.id.startsWith("BAE5") && mek.key.id.length === 16 && !m.isGroup) return;
 //========================================================================================================================//
-// Enhanced message tracking with debug logging
-function trackMessage(message) {
-  if (!message?.key?.id) {
-    console.debug('Skipping message without ID:', message);
-    return;
-  }
-  
-  const messageId = message.key.id;
-  console.debug(`Tracking message ${messageId}`);
-  
-  messageStore.set(messageId, {
-    ...message,
-    timestamp: new Date(),
-    isDeleted: false,
-    sender: message.key.participant || message.key.remoteJid,
-    chatId: message.key.remoteJid
-  });
-}
-
-// Enhanced event handlers
-function setupAntiDeleteHandlers(client) {
-  // Track all incoming messages
-  client.ev.on('messages.upsert', ({ messages }) => {
-    messages.forEach(msg => {
-      if (!isRevocationMessage(msg)) {
-        trackMessage(msg);
-      }
-    });
-  });
-
-  // Specifically handle message revocations
-  client.ev.on('messages.update', async (updates) => {
-    for (const update of updates) {
-      if (update.update?.messageStubType === 7) { // 7 is REVOKE
-        console.debug('Detected message revocation:', update);
-        
-        const userSettings = getUserSettings(client.user.id);
-        if (userSettings.antidelete === 'off') {
-          continue;
+// Example antidelete handler
+if (antidelete !== "off") {
+    if (mek.message?.protocolMessage?.type === 0) { // Only deleted messages
+        if (antidelete === "private") {
+            // Send to bot owner's private DM
+            await client.sendMessage(ownerNumber + "@s.whatsapp.net", {
+                text: `🗑 *Deleted Message*\n\nFrom: ${mek.key.remoteJid}\n\nI recovered it for you.`
+            });
+        } 
+        else if (antidelete === "chat") {
+            // Send in the same chat where deletion happened
+            await client.sendMessage(mek.key.remoteJid, {
+                text: `🗑 *Someone deleted a message!*`
+            });
         }
 
-        try {
-          const revokedMessageId = update.key.id;
-          const originalMessage = messageStore.get(revokedMessageId);
-          
-          if (!originalMessage) {
-            console.debug('No original message found for revocation:', revokedMessageId);
-            continue;
-          }
-
-          await handleAntiDelete(client, {
-            key: update.key,
-            message: {
-              protocolMessage: {
-                key: originalMessage.key
-              }
-            }
-          });
-        } catch (error) {
-          console.error('Error handling revocation:', error);
-        }
-      }
+        // Call your existing revocation handler
+        await handleMessageRevocation(client, mek);
     }
-  });
-}
-
-// Helper to identify revocation messages
-function isRevocationMessage(message) {
-  return message.message?.protocolMessage?.type === 5 || 
-         message.message?.protocolMessage?.type === 7;
-}
-
-// Modified handleIncomingMessage
-function handleIncomingMessage(message) {
-  if (isRevocationMessage(message)) {
-    console.debug('Skipping revocation message from tracking');
-    return;
-  }
-  trackMessage(message);
-  // ... your existing message handling code ...
 }
 //========================================================================================================================//
  // Corrected sendContact function using available client methods
