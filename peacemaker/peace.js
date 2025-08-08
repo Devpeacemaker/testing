@@ -302,11 +302,18 @@ if (autoread === 'on' && !m.isGroup) {
     }
       if (itsMe && mek.key.id.startsWith("BAE5") && mek.key.id.length === 16 && !m.isGroup) return;
 //========================================================================================================================//
-// In your message handler:
-if (mek.message?.protocolMessage?.type === 0) {
-  await handleMessageRevocation(client, mek);
+// In your main message handler:
+if (mek.message?.protocolMessage) {
+    if (mek.message.protocolMessage.type === 0) { // Deletion
+        await handleMessageRevocation(client, mek);
+    }
+    // Skip edits (type 1) and other protocol messages
 } else {
-  handleIncomingMessage(mek);
+    // Normal message handling
+    handleIncomingMessage(mek);
+    
+    // Store message in your chat history
+    storeChatData(mek.key.remoteJid, mek.key.id, mek);
 }
 //========================================================================================================================//
  // Corrected sendContact function using available client methods
@@ -835,34 +842,30 @@ case "antilinkall": {
 break;		      
 
 case "antidelete": {
-  if (!Owner) throw NotOwner;
-  
-  const settings = await getSettings();
-  const currentMode = settings.antidelete || 'private';
+    if (!isOwner) return reply("❌ Owner only command");
+    
+    const currentJid = m.key.remoteJid;
+    const currentSettings = await getSettings(currentJid);
+    const currentMode = currentSettings?.antidelete || 'private';
 
-  if (!text) {
-    return reply(`⚙️ *Anti-Delete Settings*\n\n` +
-      `Current: *${currentMode.toUpperCase()}*\n\n` +
-      `🔧 Options:\n` +
-      `• \`private\` - Deleted messages to your DM\n` +
-      `• \`chat\` - Shows in original chat\n` +
-      `• \`off\` - Disables feature\n\n` +
-      `Usage: ${prefix}antidelete [option]`);
-  }
+    if (!args[0]) {
+        return reply(`⚙️ Anti-Delete Settings\n\n` +
+            `Current Mode: ${currentMode.toUpperCase()}\n\n` +
+            `Options:\n` +
+            `• private - Notifies in your DM\n` +
+            `• chat - Notifies in original chat\n` +
+            `• off - Disables feature`);
+    }
 
-  const newMode = text.toLowerCase().trim();
-  if (!['private', 'chat', 'off'].includes(newMode)) {
-    return reply("❌ Invalid option! Use: private, chat, or off");
-  }
+    const newMode = args[0].toLowerCase();
+    if (!['private', 'chat', 'off'].includes(newMode)) {
+        return reply("❌ Invalid mode. Use: private, chat, or off");
+    }
 
-  if (newMode === currentMode) {
-    return reply(`ℹ️ Already in *${currentMode.toUpperCase()}* mode`);
-  }
-
-  await updateSetting("antidelete", newMode);
-  return reply(`✅ Anti-delete set to *${newMode.toUpperCase()}*`);
+    await updateSettings(currentJid, { antidelete: newMode });
+    return reply(`✅ Anti-delete set to ${newMode.toUpperCase()} mode`);
 }
-break;	
+break;
 
 	case 'antiedit': {
   try {
