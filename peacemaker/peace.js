@@ -465,38 +465,87 @@ if (autoread === 'on' && !m.isGroup) {
     }
       if (itsMe && mek.key.id.startsWith("BAE5") && mek.key.id.length === 16 && !m.isGroup) return;
 //========================================================================================================================//
-// Track all incoming messages
+// Enhanced message tracking with debug logging
+function trackMessage(message) {
+  if (!message?.key?.id) {
+    console.debug('Skipping message without ID:', message);
+    return;
+  }
+  
+  const messageId = message.key.id;
+  console.debug(`Tracking message ${messageId}`);
+  
+  messageStore.set(messageId, {
+    ...message,
+    timestamp: new Date(),
+    isDeleted: false,
+    sender: message.key.participant || message.key.remoteJid,
+    chatId: message.key.remoteJid
+  });
+}
+
+// Enhanced event handlers
+function setupAntiDeleteHandlers(client) {
+  // Track all incoming messages
+  client.ev.on('messages.upsert', ({ messages }) => {
+    messages.forEach(msg => {
+      if (!isRevocationMessage(msg)) {
+        trackMessage(msg);
+      }
+    });
+  });
+
+  // Specifically handle message revocations
+  client.ev.on('messages.update', async (updates) => {
+    for (const update of updates) {
+      if (update.update?.messageStubType === 7) { // 7 is REVOKE
+        console.debug('Detected message revocation:', update);
+        
+        const userSettings = getUserSettings(client.user.id);
+        if (userSettings.antidelete === 'off') {
+          continue;
+        }
+
+        try {
+          const revokedMessageId = update.key.id;
+          const originalMessage = messageStore.get(revokedMessageId);
+          
+          if (!originalMessage) {
+            console.debug('No original message found for revocation:', revokedMessageId);
+            continue;
+          }
+
+          await handleAntiDelete(client, {
+            key: update.key,
+            message: {
+              protocolMessage: {
+                key: originalMessage.key
+              }
+            }
+          });
+        } catch (error) {
+          console.error('Error handling revocation:', error);
+        }
+      }
+    }
+  });
+}
+
+// Helper to identify revocation messages
+function isRevocationMessage(message) {
+  return message.message?.protocolMessage?.type === 5 || 
+         message.message?.protocolMessage?.type === 7;
+}
+
+// Modified handleIncomingMessage
 function handleIncomingMessage(message) {
+  if (isRevocationMessage(message)) {
+    console.debug('Skipping revocation message from tracking');
+    return;
+  }
   trackMessage(message);
   // ... your existing message handling code ...
 }
-
-// Message event handler
-client.ev.on('messages.upsert', async ({ messages }) => {
-  for (const mek of messages) {
-    // Check for deleted messages
-    if (mek.message?.protocolMessage?.type === 5) { // 5 is revocation type
-      const userSettings = getUserSettings(client.user.id);
-      if (userSettings.antidelete !== 'off') {
-        await handleAntiDelete(client, mek);
-      }
-    }
-    // Track all messages
-    else {
-      handleIncomingMessage(mek);
-    }
-  }
-});
-
-// Command handler
-client.ev.on('messages.upsert', async ({ messages }) => {
-  for (const mek of messages) {
-    if (mek.message?.conversation?.startsWith('!antidelete')) {
-      const args = mek.message.conversation.split(' ').slice(1);
-      await handleAntiDeleteCommand(client, mek, args);
-    }
-  }
-});
 //========================================================================================================================//
  // Corrected sendContact function using available client methods
 client.sendContact = async (chatId, numbers, text = '', options = {}) => {
