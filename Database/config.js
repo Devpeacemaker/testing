@@ -11,7 +11,7 @@ const defaultSettings = {
   antilink: 'on',
   antilinkall: 'off',
   autobio: 'on',
-  antidelete: 'on',
+  antidelete: 'private',
   antitag: 'on',
   antibot: 'off',
   anticall: 'on',
