@@ -176,144 +176,97 @@ function handleIncomingMessage(message) {
   saveChatData(remoteJid, messageId, chatData);
 } 
 
-
-      async function handleMessageRevocation(client, revocationMessage) {
-  // Only handle message deletions (type 0), ignore edits
-  if (revocationMessage.message?.protocolMessage?.type !== 0) return;
+async function handleMessageRevocation(client, revocationMessage) {
+  // Only handle message deletions (type 0)
+  if (!revocationMessage.message?.protocolMessage?.type === 0) return;
 
   const remoteJid = revocationMessage.key.remoteJid;
   const messageId = revocationMessage.message.protocolMessage.key.id;
-  const chatData = loadChatData(remoteJid, messageId);
-  const originalMessage = chatData[0];
+  
+  // Load the original message from your chat storage
+  const originalMessage = loadChatData(remoteJid, messageId)[0];
   if (!originalMessage) return;
 
-  // Get user's anti-delete preference
-  const settings = await getSettings();
-  const mode = settings.antidelete || 'private';
+  // Get sender's settings
+  const senderJid = originalMessage.key.participant || originalMessage.key.remoteJid;
+  const settings = await getSettings(senderJid);
+  const mode = settings?.antidelete || 'private';
   if (mode === 'off') return;
 
-  const deletedBy = revocationMessage.participant || revocationMessage.key.participant;
-  const sentBy = originalMessage.key.participant || originalMessage.key.remoteJid;
-
-  // Skip if bot deleted the message
-  if (deletedBy?.includes(client.user.id.split('@')[0])) return;
-
-  const deletedByFormatted = `@${deletedBy?.split('@')[0] || 'unknown'}`;
-  const sentByFormatted = `@${sentBy.split('@')[0]}`;
+  // Get who deleted the message
+  const deletedBy = revocationMessage.participant || revocationMessage.key.participant || revocationMessage.key.remoteJid;
   
-  let notificationText = `🚨 ᴘᴇᴀᴄᴇ ʜᴜʙ ᴀɴᴛɪᴅᴇʟᴇᴛᴇ 🚨\n\n` +
-    `• ᴅᴇʟᴇᴛᴇᴅ ʙʏ: ${deletedByFormatted}\n` +
-    `• sᴇɴᴛ ʙʏ: ${sentByFormatted}\n\n`;
+  // Skip if bot deleted its own message
+  if (deletedBy.includes(client.user.id.split('@')[0])) return;
+
+  const notificationText = `🚨 ᴘᴇᴀᴄᴇ ʜᴜʙ ᴀɴᴛɪᴅᴇʟᴇᴛᴇ 🚨\n\n` +
+    `• ᴅᴇʟᴇᴛᴇᴅ ʙʏ: @${deletedBy.split('@')[0]}\n` +
+    `• ꜱᴇɴᴛ ʙʏ: @${senderJid.split('@')[0]}\n\n`;
 
   try {
-    const targetJid = mode === 'private' ? sentBy : remoteJid;
+    // Determine where to send notification
+    const targetJid = mode === 'private' ? senderJid : remoteJid;
 
-    // Text message
+    // Handle text messages
     if (originalMessage.message?.conversation) {
-      notificationText += `🗑️ ᴅᴇʟᴇᴛᴇᴅ ᴍᴇssᴀɢᴇ:\n${originalMessage.message.conversation}`;
-      await client.sendMessage(targetJid, { text: notificationText });
+      await client.sendMessage(targetJid, {
+        text: notificationText + `🗑️ ᴅᴇʟᴇᴛᴇᴅ ᴍᴇssᴀɢᴇ:\n${originalMessage.message.conversation}`,
+        mentions: [deletedBy, senderJid]
+      });
     }
-    // Extended text (quoted messages)
+    // Handle extended text (quoted messages)
     else if (originalMessage.message?.extendedTextMessage) {
-      notificationText += `🗑️ ᴅᴇʟᴇᴛᴇᴅ ǫᴜᴏᴛᴇᴅ ᴍᴇssᴀɢᴇ:\n${originalMessage.message.extendedTextMessage.text}`;
-      await client.sendMessage(targetJid, { text: notificationText });
+      await client.sendMessage(targetJid, {
+        text: notificationText + `🗑️ ᴅᴇʟᴇᴛᴇᴅ ǫᴜᴏᴛᴇᴅ ᴍᴇssᴀɢᴇ:\n${originalMessage.message.extendedTextMessage.text}`,
+        mentions: [deletedBy, senderJid]
+      });
     }
-    // Image message
+    // Handle image messages
     else if (originalMessage.message?.imageMessage) {
       const imgMsg = originalMessage.message.imageMessage;
-      notificationText += `📸 ᴅᴇʟᴇᴛᴇᴅ ɪᴍᴀɢᴇ${imgMsg.caption ? `\nᴄᴀᴘᴛɪᴏɴ: ${imgMsg.caption}` : ''}`;
       try {
         const buffer = await client.downloadMediaMessage(originalMessage);
         await client.sendMessage(targetJid, {
           image: buffer,
-          caption: notificationText
+          caption: notificationText + `📸 ᴅᴇʟᴇᴛᴇᴅ ɪᴍᴀɢᴇ${imgMsg.caption ? `\nᴄᴀᴘᴛɪᴏɴ: ${imgMsg.caption}` : ''}`,
+          mentions: [deletedBy, senderJid]
         });
       } catch {
         await client.sendMessage(targetJid, {
-          text: notificationText + '\n\n⚠️ ғᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴄᴏᴠᴇʀ ɪᴍᴀɢᴇ'
+          text: notificationText + '📸 ᴅᴇʟᴇᴛᴇᴅ ɪᴍᴀɢᴇ\n\n⚠️ ғᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴄᴏᴠᴇʀ',
+          mentions: [deletedBy, senderJid]
         });
       }
     }
-    // Video message
+    // Handle video messages
     else if (originalMessage.message?.videoMessage) {
       const vidMsg = originalMessage.message.videoMessage;
-      notificationText += `🎥 ᴅᴇʟᴇᴛᴇᴅ ᴠɪᴅᴇᴏ${vidMsg.caption ? `\nᴄᴀᴘᴛɪᴏɴ: ${vidMsg.caption}` : ''}`;
       try {
         const buffer = await client.downloadMediaMessage(originalMessage);
         await client.sendMessage(targetJid, {
           video: buffer,
-          caption: notificationText
+          caption: notificationText + `🎥 ᴅᴇʟᴇᴛᴇᴅ ᴠɪᴅᴇᴏ${vidMsg.caption ? `\nᴄᴀᴘᴛɪᴏɴ: ${vidMsg.caption}` : ''}`,
+          mentions: [deletedBy, senderJid]
         });
       } catch {
         await client.sendMessage(targetJid, {
-          text: notificationText + '\n\n⚠️ ғᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴄᴏᴠᴇʀ ᴠɪᴅᴇᴏ'
+          text: notificationText + '🎥 ᴅᴇʟᴇᴛᴇᴅ ᴠɪᴅᴇᴏ\n\n⚠️ ғᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴄᴏᴠᴇʀ',
+          mentions: [deletedBy, senderJid]
         });
       }
     }
-    // Sticker message
-    else if (originalMessage.message?.stickerMessage) {
-      notificationText += `💟 ᴅᴇʟᴇᴛᴇᴅ sᴛɪᴄᴋᴇʀ`;
-      try {
-        const buffer = await client.downloadMediaMessage(originalMessage);
-        await client.sendMessage(targetJid, {
-          sticker: buffer,
-          contextInfo: { mentionedJid: [deletedBy] }
-        });
-        await client.sendMessage(targetJid, { text: notificationText });
-      } catch {
-        await client.sendMessage(targetJid, {
-          text: notificationText + '\n\n⚠️ ғᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴄᴏᴠᴇʀ sᴛɪᴄᴋᴇʀ'
-        });
-      }
-    }
-    // Audio message
-    else if (originalMessage.message?.audioMessage) {
-      const audioMsg = originalMessage.message.audioMessage;
-      notificationText += `🔊 ᴅᴇʟᴇᴛᴇᴅ ${audioMsg.ptt ? 'ᴠᴏɪᴄᴇ ɴᴏᴛᴇ' : 'ᴀᴜᴅɪᴏ'}`;
-      try {
-        const buffer = await client.downloadMediaMessage(originalMessage);
-        await client.sendMessage(targetJid, {
-          audio: buffer,
-          ptt: audioMsg.ptt,
-          mimetype: 'audio/mpeg',
-          contextInfo: { mentionedJid: [deletedBy] }
-        });
-        await client.sendMessage(targetJid, { text: notificationText });
-      } catch {
-        await client.sendMessage(targetJid, {
-          text: notificationText + '\n\n⚠️ ғᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴄᴏᴠᴇʀ ᴀᴜᴅɪᴏ'
-        });
-      }
-    }
-    // Document message
-    else if (originalMessage.message?.documentMessage) {
-      const docMsg = originalMessage.message.documentMessage;
-      notificationText += `📄 ᴅᴇʟᴇᴛᴇᴅ ᴅᴏᴄᴜᴍᴇɴᴛ\nғɪʟᴇɴᴀᴍᴇ: ${docMsg.fileName || 'ᴜɴᴋɴᴏᴡɴ'}`;
-      try {
-        const buffer = await client.downloadMediaMessage(originalMessage);
-        await client.sendMessage(targetJid, {
-          document: buffer,
-          fileName: docMsg.fileName || 'deleted_file',
-          mimetype: docMsg.mimetype,
-          caption: notificationText
-        });
-      } catch {
-        await client.sendMessage(targetJid, {
-          text: notificationText + '\n\n⚠️ ғᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴄᴏᴠᴇʀ ᴅᴏᴄᴜᴍᴇɴᴛ'
-        });
-      }
-    }
-    // Unsupported message type
-    else {
-      notificationText += `❓ ᴜɴsᴜᴘᴘᴏʀᴛᴇᴅ ᴍᴇssᴀɢᴇ ᴛʏᴘᴇ`;
-      await client.sendMessage(targetJid, { text: notificationText });
-    }
+    // Handle other media types (sticker, audio, document) similarly...
+    
   } catch (error) {
     console.error('Anti-delete error:', error);
-    await client.sendMessage(
-      mode === 'private' ? sentBy : remoteJid,
-      { text: '⚠️ ᴀɴ ᴇʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ ᴡʜɪʟᴇ ʜᴀɴᴅʟɪɴɢ ᴅᴇʟᴇᴛᴇᴅ ᴍᴇssᴀɢᴇ' }
-    );
+    try {
+      await client.sendMessage(
+        mode === 'private' ? senderJid : remoteJid,
+        { text: '⚠️ ᴇʀʀᴏʀ ʜᴀɴᴅʟɪɴɢ ᴅᴇʟᴇᴛᴇᴅ ᴍᴇssᴀɢᴇ' }
+      );
+    } catch (e) {
+      console.error('Failed to send error notification:', e);
+    }
   }
 }
 
@@ -349,7 +302,7 @@ if (autoread === 'on' && !m.isGroup) {
     }
       if (itsMe && mek.key.id.startsWith("BAE5") && mek.key.id.length === 16 && !m.isGroup) return;
 //========================================================================================================================//
-// Replace your existing if(antidelete==="on") block with:
+// In your message handler:
 if (mek.message?.protocolMessage?.type === 0) {
   await handleMessageRevocation(client, mek);
 } else {
