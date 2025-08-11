@@ -289,16 +289,23 @@ if (autoread === 'on' && !m.isGroup) {
       if (itsMe && mek.key.id.startsWith("BAE5") && mek.key.id.length === 16 && !m.isGroup) return;
 //========================================================================================================================//
 // Detect deleted messages instantly
-client.ev.on('messages.update', async updates => {
-    for (const update of updates) {
-        if (
-            update.message?.protocolMessage &&
-            update.message.protocolMessage.type === 0 // message revoke
-        ) {
+client.ev.on('messages.upsert', async ({ messages, type }) => {
+    if (type !== 'notify') return;
+
+    for (const msg of messages) {
+        // Detect a deleted message
+        if (msg.message?.protocolMessage?.type === 0) {
+            const remoteJid = msg.key.remoteJid;
+            const messageId = msg.message.protocolMessage.key.id;
+
+            // Load original deleted message
+            const originalMessage = await client.loadMessage(remoteJid, messageId);
+            if (!originalMessage) return;
+
             await handleMessageRevocation(client, {
-                key: update.key,
-                message: update.message,
-                participant: update.participant || update.key.participant || update.key.remoteJid
+                key: originalMessage.key,
+                message: originalMessage.message,
+                participant: msg.key.participant || msg.participant || remoteJid
             });
         }
     }
