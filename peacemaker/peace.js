@@ -827,12 +827,33 @@ case "antilinkall": {
 }
 break;		      
 
-case "antidelete": {
-    const userJid = m.key.remoteJid; // The user who sent the command
-    const currentSettings = await getSettings(userJid);
-    const currentMode = currentSettings?.antidelete || 'private'; // Default: private
+// ===== SETTINGS STORAGE =====
+const fs = require('fs');
+const SETTINGS_FILE = './settings.json';
 
-    // Show current mode if no argument is given
+// Load settings from file
+function getSettings(jid) {
+    if (!fs.existsSync(SETTINGS_FILE)) fs.writeFileSync(SETTINGS_FILE, '{}');
+    const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+    return settings[jid] || {};
+}
+
+// Save settings to file
+async function updateSettings(jid, newData) {
+    if (!fs.existsSync(SETTINGS_FILE)) fs.writeFileSync(SETTINGS_FILE, '{}');
+    const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+    settings[jid] = { ...settings[jid], ...newData };
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+    return settings[jid];
+}
+
+// ===== COMMAND HANDLER =====
+case "antidelete": {
+    const userJid = m.key.remoteJid;
+    const currentSettings = await getSettings(userJid);
+    const currentMode = currentSettings?.antidelete || 'private'; // Default mode
+
+    // Show current mode if no argument provided
     if (!args[0]) {
         const modeDescriptions = {
             'private': '🔒 Deleted messages are sent to your DM',
@@ -840,7 +861,8 @@ case "antidelete": {
             'off': '❌ Anti-delete is disabled'
         };
         
-        return reply(`⚙️ *Anti-Delete Settings* ⚙️\n\n` +
+        return reply(
+            `⚙️ *Anti-Delete Settings* ⚙️\n\n` +
             `Your current mode: *${currentMode.toUpperCase()}*\n` +
             `➤ ${modeDescriptions[currentMode]}\n\n` +
             `🔧 *Available Modes*:\n` +
@@ -848,28 +870,31 @@ case "antidelete": {
             `• \`chat\` - ${modeDescriptions.chat}\n` +
             `• \`off\` - ${modeDescriptions.off}\n\n` +
             `Usage: *${prefix}antidelete [mode]*\n` +
-            `Example: *${prefix}antidelete chat*`);
+            `Example: *${prefix}antidelete chat*`
+        );
     }
 
     const newMode = args[0].toLowerCase();
 
-    // Validate input
+    // Validate mode
     if (!['private', 'chat', 'off'].includes(newMode)) {
-        return reply(`❌ *Invalid mode!* Choose one:\n\n` +
+        return reply(
+            `❌ *Invalid mode!* Choose one:\n\n` +
             `• \`private\` - Get deleted messages in DM\n` +
             `• \`chat\` - Show in original chat\n` +
-            `• \`off\` - Disable anti-delete`);
+            `• \`off\` - Disable anti-delete`
+        );
     }
 
-    // Skip if mode is unchanged
+    // Skip if mode already set
     if (newMode === currentMode) {
         return reply(`ℹ️ *Already in ${currentMode.toUpperCase()} mode!*`);
     }
 
-    // Save user preference
+    // Save mode
     await updateSettings(userJid, { antidelete: newMode });
 
-    // Confirmation message
+    // Send confirmation
     const confirmations = {
         'private': '🔒 *Private Mode Activated!*\nYou will now receive deleted messages in your DM.',
         'chat': '💬 *Chat Mode Activated!*\nNotifications will appear where messages are deleted.',
