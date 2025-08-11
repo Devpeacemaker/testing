@@ -4741,8 +4741,8 @@ case "speed": {
     const Rspeed = end - start;
     const formattedSpeed = formatSpeed(Rspeed);
 
-    // Edit the message so WhatsApp shows the "edited" tag
-    await client.sendMessage(m.chat, { text: `🔶Peacehub speed\n${formattedSpeed}`, edit: key });
+    // Edit so speed is next to text
+    await client.sendMessage(m.chat, { text: `🔶Peacehub speed ${formattedSpeed}`, edit: key });
 }
 break;
 
