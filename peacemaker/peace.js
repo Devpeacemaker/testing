@@ -302,18 +302,11 @@ if (autoread === 'on' && !m.isGroup) {
     }
       if (itsMe && mek.key.id.startsWith("BAE5") && mek.key.id.length === 16 && !m.isGroup) return;
 //========================================================================================================================//
-// In your main message handler:
-if (mek.message?.protocolMessage) {
-    if (mek.message.protocolMessage.type === 0) { // Deletion
-        await handleMessageRevocation(client, mek);
-    }
-    // Skip edits (type 1) and other protocol messages
+// In your message handler:
+if (mek.message?.protocolMessage?.type === 0) {
+  await handleMessageRevocation(client, mek);
 } else {
-    // Normal message handling
-    handleIncomingMessage(mek);
-    
-    // Store message in your chat history
-    storeChatData(mek.key.remoteJid, mek.key.id, mek);
+  handleIncomingMessage(mek);
 }
 //========================================================================================================================//
  // Corrected sendContact function using available client methods
