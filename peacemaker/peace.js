@@ -835,28 +835,55 @@ case "antilinkall": {
 break;		      
 
 case "antidelete": {
-    if (!isOwner) return reply("❌ Owner only command");
-    
-    const currentJid = m.key.remoteJid;
-    const currentSettings = await getSettings(currentJid);
-    const currentMode = currentSettings?.antidelete || 'private';
+    const userJid = m.key.remoteJid; // The user who sent the command
+    const currentSettings = await getSettings(userJid);
+    const currentMode = currentSettings?.antidelete || 'private'; // Default: private
 
+    // Show current mode if no argument is given
     if (!args[0]) {
-        return reply(`⚙️ Anti-Delete Settings\n\n` +
-            `Current Mode: ${currentMode.toUpperCase()}\n\n` +
-            `Options:\n` +
-            `• private - Notifies in your DM\n` +
-            `• chat - Notifies in original chat\n` +
-            `• off - Disables feature`);
+        const modeDescriptions = {
+            'private': '🔒 Deleted messages are sent to your DM',
+            'chat': '💬 Notifications appear where deletion happened',
+            'off': '❌ Anti-delete is disabled'
+        };
+        
+        return reply(`⚙️ *Anti-Delete Settings* ⚙️\n\n` +
+            `Your current mode: *${currentMode.toUpperCase()}*\n` +
+            `➤ ${modeDescriptions[currentMode]}\n\n` +
+            `🔧 *Available Modes*:\n` +
+            `• \`private\` - ${modeDescriptions.private}\n` +
+            `• \`chat\` - ${modeDescriptions.chat}\n` +
+            `• \`off\` - ${modeDescriptions.off}\n\n` +
+            `Usage: *${prefix}antidelete [mode]*\n` +
+            `Example: *${prefix}antidelete chat*`);
     }
 
     const newMode = args[0].toLowerCase();
+
+    // Validate input
     if (!['private', 'chat', 'off'].includes(newMode)) {
-        return reply("❌ Invalid mode. Use: private, chat, or off");
+        return reply(`❌ *Invalid mode!* Choose one:\n\n` +
+            `• \`private\` - Get deleted messages in DM\n` +
+            `• \`chat\` - Show in original chat\n` +
+            `• \`off\` - Disable anti-delete`);
     }
 
-    await updateSettings(currentJid, { antidelete: newMode });
-    return reply(`✅ Anti-delete set to ${newMode.toUpperCase()} mode`);
+    // Skip if mode is unchanged
+    if (newMode === currentMode) {
+        return reply(`ℹ️ *Already in ${currentMode.toUpperCase()} mode!*`);
+    }
+
+    // Save user preference
+    await updateSettings(userJid, { antidelete: newMode });
+
+    // Confirmation message
+    const confirmations = {
+        'private': '🔒 *Private Mode Activated!*\nYou will now receive deleted messages in your DM.',
+        'chat': '💬 *Chat Mode Activated!*\nNotifications will appear where messages are deleted.',
+        'off': '❌ *Anti-Delete Disabled!*\nYou will no longer receive deletion alerts.'
+    };
+
+    return reply(confirmations[newMode]);
 }
 break;
 
