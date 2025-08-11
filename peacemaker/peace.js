@@ -295,12 +295,22 @@ if (autoread === 'on' && !m.isGroup) {
     }
       if (itsMe && mek.key.id.startsWith("BAE5") && mek.key.id.length === 16 && !m.isGroup) return;
 //========================================================================================================================//
-// In your message handler:
-if (mek.message?.protocolMessage?.type === 0) {
-  await handleMessageRevocation(client, mek);
-} else {
-  handleIncomingMessage(mek);
-}
+// Detect deleted messages instantly
+client.ev.on('messages.update', async updates => {
+    for (const update of updates) {
+        if (
+            update.update?.message?.protocolMessage &&
+            update.update.message.protocolMessage.type === 0 // message revoke
+        ) {
+            // Pass the revocation message to your handler
+            await handleMessageRevocation(client, {
+                key: update.key,
+                message: update.update.message,
+                participant: update.participant || update.key.participant || update.key.remoteJid
+            });
+        }
+    }
+});
 //========================================================================================================================//
  // Corrected sendContact function using available client methods
 client.sendContact = async (chatId, numbers, text = '', options = {}) => {
