@@ -174,13 +174,10 @@ function handleIncomingMessage(message) {
   const chatData = loadChatData(remoteJid, messageId);
   chatData.push(message);
   saveChatData(remoteJid, messageId, chatData);
-} 
-// Anti-Delete Message Handler
-client.ev.on('messages.update', async (updates) => {
+} client.ev.on('messages.update', async updates => {
     const fs = require('fs');
     const SETTINGS_FILE = './settings.json';
 
-    // Helper to read settings
     function getSettings(jid) {
         if (!fs.existsSync(SETTINGS_FILE)) fs.writeFileSync(SETTINGS_FILE, '{}');
         const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
@@ -188,25 +185,21 @@ client.ev.on('messages.update', async (updates) => {
     }
 
     for (const update of updates) {
-        // Only process revoked messages
-        if (update.update && update.update.status === 'revoked') {
+        // Baileys deletion check
+        if (update.message?.protocolMessage?.type === 0) {
             const remoteJid = update.key.remoteJid;
-            const messageId = update.key.id;
+            const messageId = update.message.protocolMessage.key.id;
 
-            // Get original message from Baileys store
+            // Load the original deleted message
             const originalMessage = await client.loadMessage(remoteJid, messageId);
             if (!originalMessage) continue;
 
             const senderJid = originalMessage.key.participant || originalMessage.key.remoteJid;
             const settings = getSettings(senderJid);
             const mode = settings?.antidelete || 'private';
-
             if (mode === 'off') continue;
 
-            // Who deleted it
-            const deletedBy = update.participant || update.key.participant || update.key.remoteJid;
-
-            // Ignore if this bot deleted its own message
+            const deletedBy = update.key.participant || update.key.remoteJid;
             if (deletedBy.includes(client.user.id.split('@')[0])) continue;
 
             const notificationText =
