@@ -175,101 +175,95 @@ function handleIncomingMessage(message) {
   chatData.push(message);
   saveChatData(remoteJid, messageId, chatData);
 } 
+// Anti-Delete Message Handler
+client.ev.on('messages.update', async (updates) => {
+    const fs = require('fs');
+    const SETTINGS_FILE = './settings.json';
 
-async function handleMessageRevocation(client, revocationMessage) {
-    // Only handle actual message deletions (type 0)
-    if (revocationMessage.message?.protocolMessage?.type !== 0) return;
+    // Helper to read settings
+    function getSettings(jid) {
+        if (!fs.existsSync(SETTINGS_FILE)) fs.writeFileSync(SETTINGS_FILE, '{}');
+        const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+        return settings[jid] || {};
+    }
 
-    const remoteJid = revocationMessage.key.remoteJid;
-    const messageId = revocationMessage.message.protocolMessage.key.id;
+    for (const update of updates) {
+        // Only process revoked messages
+        if (update.update && update.update.status === 'revoked') {
+            const remoteJid = update.key.remoteJid;
+            const messageId = update.key.id;
 
-    // Load the original message from your chat storage
-    const originalMessage = loadChatData(remoteJid, messageId)?.[0];
-    if (!originalMessage) return;
+            // Get original message from Baileys store
+            const originalMessage = await client.loadMessage(remoteJid, messageId);
+            if (!originalMessage) continue;
 
-    // Get sender's settings
-    const senderJid = originalMessage.key.participant || originalMessage.key.remoteJid;
-    const settings = await getSettings(senderJid);
-    const mode = settings?.antidelete || 'private';
-    if (mode === 'off') return;
+            const senderJid = originalMessage.key.participant || originalMessage.key.remoteJid;
+            const settings = getSettings(senderJid);
+            const mode = settings?.antidelete || 'private';
 
-    // Who deleted the message
-    const deletedBy = revocationMessage.participant || revocationMessage.key.participant || revocationMessage.key.remoteJid;
+            if (mode === 'off') continue;
 
-    // ❌ Skip if bot deleted its own message
-    if (deletedBy.split('@')[0] === client.user.id.split('@')[0]) return;
+            // Who deleted it
+            const deletedBy = update.participant || update.key.participant || update.key.remoteJid;
 
-    // Notification text
-    const notificationText = `🚨 ᴘᴇᴀᴄᴇ ʜᴜʙ ᴀɴᴛɪᴅᴇʟᴇᴛᴇ 🚨\n\n` +
-        `• ᴅᴇʟᴇᴛᴇᴅ ʙʏ: @${deletedBy.split('@')[0]}\n` +
-        `• ꜱᴇɴᴛ ʙʏ: @${senderJid.split('@')[0]}\n\n`;
+            // Ignore if this bot deleted its own message
+            if (deletedBy.includes(client.user.id.split('@')[0])) continue;
 
-    try {
-        // Decide where to send
-        const targetJid = mode === 'private' ? senderJid : remoteJid;
+            const notificationText =
+                `🚨 ᴘᴇᴀᴄᴇ ʜᴜʙ ᴀɴᴛɪᴅᴇʟᴇᴛᴇ 🚨\n\n` +
+                `• ᴅᴇʟᴇᴛᴇᴅ ʙʏ: @${deletedBy.split('@')[0]}\n` +
+                `• ꜱᴇɴᴛ ʙʏ: @${senderJid.split('@')[0]}\n\n`;
 
-        // Handle text messages
-        if (originalMessage.message?.conversation) {
-            await client.sendMessage(targetJid, {
-                text: notificationText + `🗑️ ᴅᴇʟᴇᴛᴇᴅ ᴍᴇssᴀɢᴇ:\n${originalMessage.message.conversation}`,
-                mentions: [deletedBy, senderJid]
-            });
-        }
-        // Handle extended text
-        else if (originalMessage.message?.extendedTextMessage) {
-            await client.sendMessage(targetJid, {
-                text: notificationText + `🗑️ ᴅᴇʟᴇᴛᴇᴅ ǫᴜᴏᴛᴇᴅ ᴍᴇssᴀɢᴇ:\n${originalMessage.message.extendedTextMessage.text}`,
-                mentions: [deletedBy, senderJid]
-            });
-        }
-        // Handle images
-        else if (originalMessage.message?.imageMessage) {
-            const imgMsg = originalMessage.message.imageMessage;
+            const targetJid = mode === 'private' ? senderJid : remoteJid;
+
             try {
-                const buffer = await client.downloadMediaMessage(originalMessage);
-                await client.sendMessage(targetJid, {
-                    image: buffer,
-                    caption: notificationText + `📸 ᴅᴇʟᴇᴛᴇᴅ ɪᴍᴀɢᴇ${imgMsg.caption ? `\nᴄᴀᴘᴛɪᴏɴ: ${imgMsg.caption}` : ''}`,
-                    mentions: [deletedBy, senderJid]
-                });
-            } catch {
-                await client.sendMessage(targetJid, {
-                    text: notificationText + '📸 ᴅᴇʟᴇᴛᴇᴅ ɪᴍᴀɢᴇ\n\n⚠️ ғᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴄᴏᴠᴇʀ',
-                    mentions: [deletedBy, senderJid]
-                });
+                if (originalMessage.message?.conversation) {
+                    await client.sendMessage(targetJid, {
+                        text: notificationText + `🗑️ ᴅᴇʟᴇᴛᴇᴅ ᴍᴇssᴀɢᴇ:\n${originalMessage.message.conversation}`,
+                        mentions: [deletedBy, senderJid]
+                    });
+                } else if (originalMessage.message?.extendedTextMessage) {
+                    await client.sendMessage(targetJid, {
+                        text: notificationText + `🗑️ ᴅᴇʟᴇᴛᴇᴅ ǫᴜᴏᴛᴇᴅ ᴍᴇssᴀɢᴇ:\n${originalMessage.message.extendedTextMessage.text}`,
+                        mentions: [deletedBy, senderJid]
+                    });
+                } else if (originalMessage.message?.imageMessage) {
+                    const imgMsg = originalMessage.message.imageMessage;
+                    try {
+                        const buffer = await client.downloadMediaMessage(originalMessage);
+                        await client.sendMessage(targetJid, {
+                            image: buffer,
+                            caption: notificationText + `📸 ᴅᴇʟᴇᴛᴇᴅ ɪᴍᴀɢᴇ${imgMsg.caption ? `\nᴄᴀᴘᴛɪᴏɴ: ${imgMsg.caption}` : ''}`,
+                            mentions: [deletedBy, senderJid]
+                        });
+                    } catch {
+                        await client.sendMessage(targetJid, {
+                            text: notificationText + '📸 ᴅᴇʟᴇᴛᴇᴅ ɪᴍᴀɢᴇ\n\n⚠️ ғᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴄᴏᴠᴇʀ',
+                            mentions: [deletedBy, senderJid]
+                        });
+                    }
+                } else if (originalMessage.message?.videoMessage) {
+                    const vidMsg = originalMessage.message.videoMessage;
+                    try {
+                        const buffer = await client.downloadMediaMessage(originalMessage);
+                        await client.sendMessage(targetJid, {
+                            video: buffer,
+                            caption: notificationText + `🎥 ᴅᴇʟᴇᴛᴇᴅ ᴠɪᴅᴇᴏ${vidMsg.caption ? `\nᴄᴀᴘᴛɪᴏɴ: ${vidMsg.caption}` : ''}`,
+                            mentions: [deletedBy, senderJid]
+                        });
+                    } catch {
+                        await client.sendMessage(targetJid, {
+                            text: notificationText + '🎥 ᴅᴇʟᴇᴛᴇᴅ ᴠɪᴅᴇᴏ\n\n⚠️ ғᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴄᴏᴠᴇʀ',
+                            mentions: [deletedBy, senderJid]
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error('Anti-delete error:', err);
             }
-        }
-        // Handle videos
-        else if (originalMessage.message?.videoMessage) {
-            const vidMsg = originalMessage.message.videoMessage;
-            try {
-                const buffer = await client.downloadMediaMessage(originalMessage);
-                await client.sendMessage(targetJid, {
-                    video: buffer,
-                    caption: notificationText + `🎥 ᴅᴇʟᴇᴛᴇᴅ ᴠɪᴅᴇᴏ${vidMsg.caption ? `\nᴄᴀᴘᴛɪᴏɴ: ${vidMsg.caption}` : ''}`,
-                    mentions: [deletedBy, senderJid]
-                });
-            } catch {
-                await client.sendMessage(targetJid, {
-                    text: notificationText + '🎥 ᴅᴇʟᴇᴛᴇᴅ ᴠɪᴅᴇᴏ\n\n⚠️ ғᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴄᴏᴠᴇʀ',
-                    mentions: [deletedBy, senderJid]
-                });
-            }
-        }
-        // Add stickers, audio, docs if needed
-
-    } catch (error) {
-        console.error('Anti-delete error:', error);
-        try {
-            await client.sendMessage(
-                mode === 'private' ? senderJid : remoteJid,
-                { text: '⚠️ ᴇʀʀᴏʀ ʜᴀɴᴅʟɪɴɢ ᴅᴇʟᴇᴛᴇᴅ ᴍᴇssᴀɢᴇ' }
-            );
-        } catch (e) {
-            console.error('Failed to send error notification:', e);
         }
     }
-}
+});
       
 //========================================================================================================================//
 //========================================================================================================================//	  
