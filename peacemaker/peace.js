@@ -292,13 +292,12 @@ if (autoread === 'on' && !m.isGroup) {
 client.ev.on('messages.update', async updates => {
     for (const update of updates) {
         if (
-            update.update?.message?.protocolMessage &&
-            update.update.message.protocolMessage.type === 0 // message revoke
+            update.message?.protocolMessage &&
+            update.message.protocolMessage.type === 0 // message revoke
         ) {
-            // Pass the revocation message to your handler
             await handleMessageRevocation(client, {
                 key: update.key,
-                message: update.update.message,
+                message: update.message,
                 participant: update.participant || update.key.participant || update.key.remoteJid
             });
         }
