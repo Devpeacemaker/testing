@@ -356,12 +356,24 @@ try {
       console.log(color("Congrats, PEACE-HUB has successfully connected to this server", "green"));
       console.log(color("Follow me on Instagram as peacemaker_hunter72", "red"));
       console.log(color("Text the bot number with menu to check my command list"));
-      const Texxt = `🟩 𝙻𝙸𝙽𝙺 𝚂𝚃𝙰𝚃𝚄𝚂 ╍>『𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱』\n` +
-              `🎚️ 𝙾𝙿𝙴𝚁𝙰𝚃𝙸𝙽𝙶 𝙼𝙾𝙳𝙴 ╍>『${mode}』\n` +
-              `🅿️ 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 𝙿𝚁𝙴𝙵𝙸𝚇 ╍>『${prefix}』`
-      client.sendMessage(client.user.id, { text: Texxt });
-    }
-  });
+      
+
+// Get current Kenyan date/time
+const now = new Date();
+const day = now.toLocaleDateString('en-KE', { weekday: 'long' });
+const time = now.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+// Small-caps styled connection message
+const Texxt =
+`           ✨ ᴘᴇᴀᴄᴇ ʜᴜʙ ᴄᴏɴɴᴇᴄᴛᴇᴅ ✨
+
+📆 ᴅᴀʏ   : ${day}
+⏳ ᴛɪᴍᴇ  : ${time}
+🎛️ ᴍᴏᴅᴇ : ${mode}
+🌀 ᴘʀᴇғɪx : ${prefix}`;
+
+// Send to your own WhatsApp
+client.sendMessage(client.user.id, { text: Texxt });
 
   client.ev.on("creds.update", saveCreds);
  const getBuffer = async (url, options) => {
