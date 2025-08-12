@@ -603,7 +603,7 @@ if (antilinkall === 'on' && body.includes('https://') && !Owner && isBotAdmin &&
 ┃ ❃  𝙿𝚑𝚘𝚝𝚘  
 ┃ ❃  𝙼𝚙𝟺  
 ┃ ❃  𝚁𝚎𝚝𝚛𝚒𝚎𝚟𝚎  
-┃ ❃  ➍𝚅𝚟  
+┃ ❃  𝚅𝚟  
 ┃ ❃  𝚅𝚟𝟸  
 ┃ ❃  𝚂𝚌𝚛𝚎𝚎𝚗𝚜𝚑𝚘𝚝  
 ┃ ❃  𝙼𝚒𝚡  
@@ -613,7 +613,8 @@ if (antilinkall === 'on' && body.includes('https://') && !Owner && isBotAdmin &&
 ┗━───────━━┛
 > 𝚂𝙴𝚃𝚃𝙸𝙽𝙶𝚂 𝙲𝙼𝙳𝚂 (𝙾𝙽/𝙾𝙵𝙵)
 ┏━──────────━┓
-┃ ✥  𝙰𝚗𝚝𝚒𝚍𝚎𝚕𝚎𝚝𝚎  
+┃ ✥  𝙰𝚗𝚝𝚒𝚍𝚎𝚕𝚎𝚝𝚎 
+┃ ✥  𝙰𝚗𝚝𝚒𝚎𝚍𝚒𝚝
 ┃ ✥  𝙰𝚗𝚝𝚒𝚌𝚊𝚕𝚕  
 ┃ ✥  𝙰𝚗𝚝𝚒𝚋𝚘𝚝  
 ┃ ✥  𝙱𝚊𝚍𝚠𝚘𝚛𝚍  
@@ -1417,7 +1418,7 @@ await client.sendMessage(from, {
                     `https://api.heroku.com/apps/${appname}/builds`,
                     {
                         source_blob: {
-                            url: "https://github.com/Devpeacemaker/unknown-error/tarball/main",
+                            url: "https://github.com/Devpeacemaker/testing/tarball/main",
                         },
                     },
                     {
