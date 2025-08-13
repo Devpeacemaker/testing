@@ -5256,70 +5256,88 @@ case "listonline": {
     }
     break;
 }
-		case "active":
+			  
+	case "active":
 case "listactive": {
     if (!m.isGroup) return m.reply("❌ This command only works in groups!");
 
+    // Send initial processing message
+    const processingMsg = await m.reply("⏳ Scanning recent activity...");
+
     try {
-        // Get group metadata
         const groupMetadata = await client.groupMetadata(m.chat);
         const participants = groupMetadata.participants;
 
-        // Time window for activity (e.g., last 24 hours)
-        const activeTimeWindow = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-        const cutoffTime = Date.now() - activeTimeWindow;
+        // Time window for activity (e.g., last 12 hours)
+        const hoursToCheck = 12;
+        const cutoffTime = Date.now() - (hoursToCheck * 60 * 60 * 1000);
 
-        // Fetch recent messages in the group
-        const messages = await client.loadMessages(m.chat, { limit: 100 }); // Adjust limit as needed
+        // Try to load recent messages (catch errors if fetching fails)
+        let messages = [];
+        try {
+            messages = await client.loadMessages(m.chat, { limit: 50 }); // Smaller limit to avoid timeouts
+        } catch (fetchError) {
+            console.error("Failed to load messages:", fetchError);
+            // Fallback: Check online status if message history is unavailable
+            await client.sendMessage(m.chat, { 
+                delete: processingMsg.key 
+            });
+            return m.reply("⚠️ Could not fetch message history. Try again later or check permissions.");
+        }
 
         const activeUsers = new Set();
 
-        // Check messages and reactions in the last X hours
+        // Check senders and reactions in the time window
         for (const msg of messages) {
-            // If message is within the time window
             if (msg.timestamp >= cutoffTime) {
-                // Add sender to active users
-                if (msg.key.participant || msg.key.remoteJid) {
-                    const userId = msg.key.participant || msg.key.remoteJid;
-                    activeUsers.add(userId);
-                }
+                // Add sender
+                const senderId = msg.key.participant || msg.key.remoteJid;
+                if (senderId) activeUsers.add(senderId);
 
-                // Check reactions (if any)
-                if (msg.reactions?.length) {
-                    for (const reaction of msg.reactions) {
+                // Add reactors (if reactions exist)
+                if (msg.reactions?.length > 0) {
+                    msg.reactions.forEach(reaction => {
                         activeUsers.add(reaction.senderId);
-                    }
+                    });
                 }
             }
         }
 
-        // Generate active members list
-        let activeCount = activeUsers.size;
-        let activeList = "🌟 *Active Members (Last 24h)*\n\n";
+        // Generate the active list
+        let activeList = `🌟 *Active Members (Last ${hoursToCheck}h)*\n\n`;
+        const mentions = [];
 
-        if (activeCount === 0) {
-            activeList += "_No recent activity detected._";
+        if (activeUsers.size === 0) {
+            activeList += "_No activity detected._";
         } else {
-            for (const userId of activeUsers) {
+            activeUsers.forEach(userId => {
                 const user = participants.find(p => p.id === userId);
                 if (user) {
                     activeList += `▫️ @${user.id.split('@')[0]}\n`;
+                    mentions.push(user.id);
                 }
-            }
+            });
         }
 
-        // Send the result
+        // Delete processing message and send results
+        await client.sendMessage(m.chat, { 
+            delete: processingMsg.key 
+        });
+
         await client.sendMessage(m.chat, {
-            text: `${activeList}\n\n✅ *Total Active:* ${activeCount}/${participants.length}`,
-            mentions: Array.from(activeUsers).map(id => id)
+            text: `${activeList}\n\n✅ *Total Active:* ${activeUsers.size}/${participants.length}`,
+            mentions: mentions
         });
 
     } catch (error) {
-        console.error("Active members check error:", error);
-        m.reply("⚠️ Failed to fetch active members. Try again later.");
+        console.error("Active members error:", error);
+        await client.sendMessage(m.chat, { 
+            delete: processingMsg.key 
+        });
+        m.reply("❌ Failed to check activity. Ensure the bot has permissions to read messages.");
     }
     break;
-}	  
+}
 
 //========================================================================================================================//		      
    case 'tovideo': case 'mp4': case 'tovid': {
