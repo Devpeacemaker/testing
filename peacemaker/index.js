@@ -358,18 +358,18 @@ try {
       console.log(color("Text the bot number with menu to check my command list"));
       
 const now = new Date();
-const options = { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: true };
-const timeString = now.toLocaleTimeString('en-US', options);
+const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 const dayString = now.toLocaleDateString('en-US', { weekday: 'long' });
 
-const Texxt = `🔶 *PEACE HUB STATUS*\n` +
-               `───────────────────────\n` +
-               `⚙️  𝙼𝙾𝙳𝙴 » ${mode}\n` +
-               `⌨️  𝙿𝚁𝙴𝙵𝙸𝚇 » ${prefix}\n` +
-               `⏰  𝚃𝙸𝙼𝙴 » ${timeString}\n` +
-               `📅  𝙳𝙰𝚈 » ${dayString}\n` +
-               `───────────────────────\n` +
-               `✅ 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳 & 𝙰𝙲𝚃𝙸𝚅𝙴`;
+const Texxt = 
+`🤖 PEACE HUB - ONLINE STATUS\n` +
+`==========================\n` +
+`⚙️ Mode: ${mode}\n` +
+`⌨️ Prefix: ${prefix}\n` +
+`⏰ Time: ${timeString}\n` +
+`📅 Day: ${dayString}\n` +
+`==========================\n` +
+`✅ Bot is now active!`;
 
 client.sendMessage(client.user.id, { text: Texxt });
 
