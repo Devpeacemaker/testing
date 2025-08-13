@@ -357,22 +357,22 @@ try {
       console.log(color("Follow me on Instagram as peacemaker_hunter72", "red"));
       console.log(color("Text the bot number with menu to check my command list"));
       
-const Texxt = `🤖 *PEACE HUB STATUS*\n` +
+const Texxt = `🔶 *ᴘᴇᴀᴄᴇ ʜᴜʙ ꜱᴛᴀᴛᴜꜱ*\n` +
               `───────────────────────\n` +
-              `⚙️  𝙼𝙾𝙳𝙴 » ${mode}\n` +
-              `⌨️  𝙿𝚁𝙴𝙵𝙸𝚇 » ${prefix}\n` +
-              `⏰  𝚃𝙸𝙼𝙴 » ${new Date().toLocaleTimeString('en-US', { 
+              `⚙️  ᴍᴏᴅᴇ » ${mode}\n` +
+              `⌨️  ᴘʀᴇꜰɪx » ${prefix}\n` +
+              `⏰  ᴛɪᴍᴇ » ${new Date().toLocaleTimeString('en-US', { 
                 timeZone: 'Africa/Nairobi', // Change to your timezone
                 hour: '2-digit', 
                 minute: '2-digit', 
                 hour12: false 
               })}\n` +
-              `📅  �𝙰𝚈 » ${new Date().toLocaleDateString('en-US', { 
+              `📅  ᴅᴀʏ » ${new Date().toLocaleDateString('en-US', { 
                 timeZone: 'Africa/Nairobi', // Same timezone
                 weekday: 'long' 
               })}\n` +
               `───────────────────────\n` +
-              `✅ 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳 & 𝙰𝙲𝚃𝙸𝚅𝙴`;
+              `✅ ᴄᴏɴɴᴇᴄᴛᴇᴅ & ᴀᴄᴛɪᴠᴇ`;
 client.sendMessage(client.user.id, { text: Texxt });
 }
 });
