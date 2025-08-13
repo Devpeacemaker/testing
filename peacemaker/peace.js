@@ -5213,45 +5213,36 @@ case "listonline": {
         const groupMetadata = await client.groupMetadata(m.chat);
         const participants = groupMetadata.participants;
         
-        // Alternative method to check presence
-        const presenceData = await client.presenceSubscribe(m.chat);
-        
         let onlineCount = 0;
-        let onlineList = "🌐 Online Members\n\n";
-        
-        // Check each participant's status
+        let onlineList = "🌐 *Online Members*\n\n";
+
+        // Subscribe to presence updates for all participants
         for (const user of participants) {
             try {
-                // Method 1: Direct presence check
-                const status = await client.fetchPresence(user.id);
+                await client.presenceSubscribe(user.id);
+                const presence = await client.fetchPresence(user.id);
                 
-                // Method 2: Last seen fallback
-                const lastSeen = status.lastSeen || await client.getLastSeen(user.id);
-                
-                // Consider online if active in last 2 minutes
-                const isOnline = status.isOnline || 
-                                (lastSeen && (Date.now() - new Date(lastSeen).getTime() < 120000));
-                
-                if (isOnline) {
+                if (presence?.lastKnownPresence === "available" || presence?.isOnline) {
                     onlineCount++;
-                    const username = user.name || user.id.split('@')[0];
-                    onlineList += `▫️ @${username}\n`;
+                    onlineList += `▫️ @${user.id.split('@')[0]}\n`;
                 }
-            } catch (error) {
-                console.log(`Couldn't check status for ${user.id}:`, error);
-                continue;
+            } catch (err) {
+                console.log(`Presence check failed for ${user.id}:`, err.message);
             }
         }
 
-        // Final message with mentions
+        if (onlineCount === 0) {
+            onlineList += "_No online members detected (may be due to privacy settings)_";
+        }
+
         await client.sendMessage(m.chat, {
-            text: `🌐 Online Members: ${onlineCount}/${participants.length}\n\n${onlineList || "No online members detected"}`,
+            text: `🌐 *Online Members:* ${onlineCount}/${participants.length}\n\n${onlineList}`,
             mentions: participants.map(p => p.id)
         });
 
     } catch (error) {
         console.error("Online check error:", error);
-        m.reply("⚠️ Couldn't fetch online status. Some privacy settings may limit this feature.");
+        m.reply("⚠️ Couldn't fetch online status. This feature depends on members' privacy settings.");
     }
     break;
 }
