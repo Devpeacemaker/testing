@@ -4361,38 +4361,41 @@ ${data.description || '_No description provided_'}
   break;
 
 //========================================================================================================================//		      
-          case "delete": 
-case "del": { 
-  if (!m.isGroup) throw group; 
-  if (!isBotAdmin) throw botAdmin; 
-  if (!isAdmin) throw admin; 
-  if (!m.quoted) throw `❌ No message quoted for deletion.`; 
-
-  const { chat, fromMe, id, isBaileys } = m.quoted; 
-
-  if (isBaileys) throw `❌ I cannot delete my own messages or another bot's messages.`; 
-
-  // Delete the QUOTED message
-  await client.sendMessage(m.chat, { 
-    delete: { 
-      remoteJid: m.chat, 
-      fromMe: false, 
-      id: m.quoted.id, 
-      participant: m.quoted.sender 
-    } 
-  }); 
-
-  // Delete the COMMAND message ("!del") 
-  await client.sendMessage(m.chat, { 
-    delete: { 
-      remoteJid: m.chat, 
-      fromMe: true, 
-      id: m.id, 
-      participant: m.sender 
-    } 
-  }); 
-
-  break; 
+         case "delete":
+case "del": {
+  if (!m.isGroup) throw "❌ This command only works in groups!";
+  if (!m.quoted) throw "❌ No message quoted for deletion.";
+  
+  const { id, isBaileys } = m.quoted;
+  
+  if (isBaileys) throw "❌ I can't delete my own or another bot's messages.";
+  
+  try {
+    // Delete the quoted message (if possible)
+    await client.sendMessage(m.chat, {
+      delete: {
+        remoteJid: m.chat,
+        fromMe: false,
+        id: m.quoted.id,
+        participant: m.quoted.sender
+      }
+    });
+    
+    // Delete the command message (!del)
+    await client.sendMessage(m.chat, {
+      delete: {
+        remoteJid: m.chat,
+        fromMe: true,
+        id: m.id,
+        participant: m.sender
+      }
+    });
+  } catch (err) {
+    console.log("Delete failed (possible permission issue):", err);
+    throw "❌ Couldn't delete - make sure I have permission!";
+  }
+  
+  break;
 }
 
 //========================================================================================================================//		      
