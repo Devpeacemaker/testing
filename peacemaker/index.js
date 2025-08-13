@@ -357,17 +357,24 @@ try {
       console.log(color("Follow me on Instagram as peacemaker_hunter72", "red"));
       console.log(color("Text the bot number with menu to check my command list"));
       
+const options = { 
+  timeZone: 'Africa/Nairobi', // Change to your timezone
+  hour: '2-digit', 
+  minute: '2-digit', 
+  hour12: false // Use 24-hour format
+};
+
 const Texxt = `🤖 *PEACE HUB Status*\n` +
               `───────────────────────\n` +
               `⚙️  𝙼𝙾𝙳𝙴 » ${mode}\n` +
               `⌨️  𝙿𝚁𝙴𝙵𝙸𝚇 » ${prefix}\n` +
-              `⏰  𝚃𝙸𝙼𝙴 » ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}\n` +
-              `📅  �𝙰𝚈 » ${new Date().toLocaleDateString('en-US', { weekday: 'long' })}\n` +
+              `⏰  �𝚃𝙸𝙼𝙴 » ${new Date().toLocaleTimeString('en-US', options)}\n` +
+              `📅  �𝙰𝚈 » ${new Date().toLocaleDateString('en-US', { 
+                 timeZone: 'Africa/Nairobi', 
+                 weekday: 'long' 
+               })}\n` +
               `───────────────────────\n` +
-              `✅ �𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳 & 𝙰𝙲𝚃𝙸𝚅𝙴`;
-client.sendMessage(client.user.id, { text: Texxt });
-}
-});
+              `✅ 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳 & �𝙲𝚃𝙸𝚅𝙴`;
   client.ev.on("creds.update", saveCreds);
  const getBuffer = async (url, options) => {
     try {
