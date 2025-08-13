@@ -358,22 +358,21 @@ try {
       console.log(color("Text the bot number with menu to check my command list"));
       
 
-// Get current Kenyan date/time
 const now = new Date();
-const day = now.toLocaleDateString('en-KE', { weekday: 'long' });
-const time = now.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const options = { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: true };
+const timeString = now.toLocaleTimeString('en-US', options);
+const dayString = now.toLocaleDateString('en-US', { weekday: 'long' });
 
-// Small-caps styled connection message
-const Texxt =
-`           ✨ ᴘᴇᴀᴄᴇ ʜᴜʙ ᴄᴏɴɴᴇᴄᴛᴇᴅ ✨
+const connectionMessage = `🔶 *PEACE HUB STATUS*\n` +  
+                         `----------------------------\n` +  
+                         `⚙️ Mode » ${mode}\n` +  
+                         `⌨️ Prefix » ${prefix}\n` +  
+                         `⏰ Time » ${timeString}\n` +  
+                         `📅 Day » ${dayString}\n` +  
+                         `----------------------------\n` +  
+                         `✅ Connected & Active`;  
 
-📆 ᴅᴀʏ   : ${day}
-⏳ ᴛɪᴍᴇ  : ${time}
-🎛️ ᴍᴏᴅᴇ : ${mode}
-🌀 ᴘʀᴇғɪx : ${prefix}`;
-
-// Send to your own WhatsApp
-client.sendMessage(client.user.id, { text: Texxt });
+client.sendMessage(client.user.id, { text: connectionMessage }); 
 
   client.ev.on("creds.update", saveCreds);
  const getBuffer = async (url, options) => {
