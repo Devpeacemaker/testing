@@ -4535,7 +4535,6 @@ break;
   let pp2;
   
   if (m.quoted) {
-    // If a message is quoted
     try { 
       ha = m.quoted.sender;
       qd = await client.getName(ha);
@@ -4544,7 +4543,6 @@ break;
       pp2 = 'https://tinyurl.com/yx93l6da';
     }
   } else if (m.text.includes(' ')) {
-    // If a number is provided after "dp"
     const number = m.text.split(' ')[1].trim();
     try {
       ha = number.includes('@') ? number : `${number}@s.whatsapp.net`;
@@ -4554,7 +4552,6 @@ break;
       pp2 = 'https://tinyurl.com/yx93l6da';
     }
   } else {
-    // If neither quoted nor number provided
     throw `Tag a user or provide a number after "dp"!`;
   }
   
