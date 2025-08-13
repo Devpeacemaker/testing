@@ -5204,47 +5204,56 @@ await client.sendMessage(m.chat, { image: { url: pp },
 }
 	 break;
 
-			  case "listonline":
-case "online": {
-  if (!m.isGroup) throw "❌ This command only works in groups!";
-  
-  // Fetch all group participants
-  const groupMetadata = await client.groupMetadata(m.chat);
-  const participants = groupMetadata.participants;
-  
-  // Get online status for each member
-  const onlineStatuses = await Promise.all(
-    participants.map(async (user) => {
-      const status = await client.fetchStatus(user.id);
-      return {
-        jid: user.id,
-        name: user.name || user.id.split('@')[0],
-        lastSeen: status.lastSeen || "Unknown",
-        isOnline: status.isOnline || false
-      };
-    })
-  );
+			  case "online":
+case "listonline": {
+    if (!m.isGroup) return m.reply("❌ This command only works in groups!");
 
-  // Filter online members (last seen < 5 minutes ago)
-  const onlineMembers = onlineStatuses.filter(
-    user => user.isOnline || (Date.now() - new Date(user.lastSeen).getTime() < 300000)
-  );
+    try {
+        // Get group metadata
+        const groupMetadata = await client.groupMetadata(m.chat);
+        const participants = groupMetadata.participants;
+        
+        // Alternative method to check presence
+        const presenceData = await client.presenceSubscribe(m.chat);
+        
+        let onlineCount = 0;
+        let onlineList = "🌐 Online Members\n\n";
+        
+        // Check each participant's status
+        for (const user of participants) {
+            try {
+                // Method 1: Direct presence check
+                const status = await client.fetchPresence(user.id);
+                
+                // Method 2: Last seen fallback
+                const lastSeen = status.lastSeen || await client.getLastSeen(user.id);
+                
+                // Consider online if active in last 2 minutes
+                const isOnline = status.isOnline || 
+                                (lastSeen && (Date.now() - new Date(lastSeen).getTime() < 120000));
+                
+                if (isOnline) {
+                    onlineCount++;
+                    const username = user.name || user.id.split('@')[0];
+                    onlineList += `▫️ @${username}\n`;
+                }
+            } catch (error) {
+                console.log(`Couldn't check status for ${user.id}:`, error);
+                continue;
+            }
+        }
 
-  // Format the message
-  let message = `🌐 Online Members (${onlineMembers.length}/${participants.length})\n\n`;
-  onlineMembers.forEach((user, index) => {
-    message += `${index + 1}. @${user.jid.split('@')[0]}\n`;
-    message += `   🕒 Last Active: ${user.lastSeen}\n`;
-    message += `   ${user.isOnline ? "🟢 Currently Online" : "🟡 Recently Active"}\n\n`;
-  });
+        // Final message with mentions
+        await client.sendMessage(m.chat, {
+            text: `🌐 Online Members: ${onlineCount}/${participants.length}\n\n${onlineList || "No online members detected"}`,
+            mentions: participants.map(p => p.id)
+        });
 
-  // Send with mentions
-  await client.sendMessage(m.chat, { 
-    text: message,
-    mentions: onlineMembers.map(user => user.jid)
-  });
-  
-  break;
+    } catch (error) {
+        console.error("Online check error:", error);
+        m.reply("⚠️ Couldn't fetch online status. Some privacy settings may limit this feature.");
+    }
+    break;
 }
 			  
 
