@@ -4361,43 +4361,38 @@ ${data.description || '_No description provided_'}
   break;
 
 //========================================================================================================================//		      
-         case "delete":
-case "del": {
-  if (!m.isGroup) throw "🚫 This command only works in groups!";
-  if (!m.quoted) throw "🔍 Please quote a message to delete!";
-  
-  const { id, isBaileys } = m.quoted;
-  
-  // Prevent deleting Baileys/bot messages
-  if (isBaileys) throw "🤖 I can't delete bot messages!";
-  
-  try {
-    // Always try to delete the command message first (works if sent recently)
-    await client.sendMessage(m.chat, {
-      delete: {
-        remoteJid: m.chat,
-        fromMe: true,  // Important: marks as our own message
-        id: m.id,
-        participant: m.sender
-      }
-    });
-    
-    // Try to delete quoted message (may fail without admin)
-    await client.sendMessage(m.chat, {
-      delete: {
-        remoteJid: m.chat,
-        fromMe: false,
-        id: m.quoted.id,
-        participant: m.quoted.sender
-      }
-    });
-    
-  } catch (err) {
-    console.log("Delete action failed:", err);
-    // Don't throw error - silently fail to avoid alerting users
-  }
-  
-  break;
+         case "delete": 
+case "del": { 
+  if (!m.isGroup) throw group; 
+  if (!isBotAdmin) throw botAdmin; 
+  if (!isAdmin) throw admin; 
+  if (!m.quoted) throw `❌ No message quoted for deletion.`; 
+
+  const { chat, fromMe, id, isBaileys } = m.quoted; 
+
+  if (isBaileys) throw `❌ I cannot delete my own messages or another bot's messages.`; 
+
+  // Delete the QUOTED message
+  await client.sendMessage(m.chat, { 
+    delete: { 
+      remoteJid: m.chat, 
+      fromMe: false, 
+      id: m.quoted.id, 
+      participant: m.quoted.sender 
+    } 
+  }); 
+
+  // Delete the COMMAND message ("!del") 
+  await client.sendMessage(m.chat, { 
+    delete: { 
+      remoteJid: m.chat, 
+      fromMe: true, 
+      id: m.id, 
+      participant: m.sender 
+    } 
+  }); 
+
+  break; 
 }
 
 //========================================================================================================================//		      
