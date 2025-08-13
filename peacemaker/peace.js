@@ -5360,58 +5360,54 @@ case "listactive": {
     break;
 }
 			  // Anti-bug mode storage (you can put this in a database or JSON)
+// 1️⃣ Define at the top so it's available everywhere
 let antiBugUsers = {}; 
 
-// Command to toggle anti-bug mode
-case 'antibug': {
-    if (!m.isGroup) {
-        const status = m.text.split(' ')[1]?.toLowerCase();
-        if (!status) return m.reply(`Usage: .antibug on/off`);
-        
-        if (status === 'on') {
-            antiBugUsers[m.sender] = true;
-            return m.reply('🛡 Anti-Bug mode activated! The bot will block anyone trying to bug you.');
-        } else if (status === 'off') {
-            delete antiBugUsers[m.sender];
-            return m.reply('❌ Anti-Bug mode deactivated.');
-        } else {
-            return m.reply(`Usage: .antibug on/off`);
-        }
-    } else {
-        m.reply('⚠ This command is for private chat only!');
-    }
-}
+// 2️⃣ Anti-bug command
+case 'antibug': {  
+    const status = m.text.split(' ')[1]?.toLowerCase();  
+    if (!status) return m.reply(`Usage: .antibug on/off`);  
+      
+    if (status === 'on') {  
+        antiBugUsers[m.sender] = true;  
+        return m.reply('🛡 Anti-Bug mode activated! The bot will block anyone trying to bug you.');  
+    } else if (status === 'off') {  
+        delete antiBugUsers[m.sender];  
+        return m.reply('❌ Anti-Bug mode deactivated.');  
+    } else {  
+        return m.reply(`Usage: .antibug on/off`);  
+    }  
+}  
 break;
 
-// Message listener for bug detection
-client.ev.on('messages.upsert', async ({ messages }) => {
-    const mek = messages[0];
-    if (!mek.message) return;
-    const from = mek.key.remoteJid;
-    const sender = mek.key.participant || from;
+// 3️⃣ Bug detection listener
+client.ev.on('messages.upsert', async ({ messages }) => {  
+    const mek = messages[0];  
+    if (!mek.message) return;  
+    const from = mek.key.remoteJid;  
+    const sender = mek.key.participant || from;  
 
-    // If the receiver has anti-bug enabled
-    if (antiBugUsers[from]) {
-        const textMsg = mek.message.conversation || mek.message.extendedTextMessage?.text || '';
-        const charCount = textMsg.length;
+    // Check if antibug is on for that user
+    if (antiBugUsers[from]) {  
+        const textMsg = mek.message.conversation || mek.message.extendedTextMessage?.text || '';  
+        const charCount = textMsg.length;  
 
-        // Detect spam/bug conditions
-        if (
-            charCount > 2000 || // Very long text
-            /[\u200B-\u200F\u202A-\u202E]/.test(textMsg) || // Invisible/RTL chars
-            mek.message?.documentMessage?.fileLength > 5000000 || // Big doc
-            mek.message?.videoMessage?.fileLength > 5000000 // Big video
-        ) {
-            try {
-                await client.updateBlockStatus(sender, 'block');
-                await client.sendMessage(from, {
-                    text: `🚫 *Blocked* ${sender.split('@')[0]} for sending bug messages.`
-                });
-            } catch (err) {
-                console.log('Error blocking:', err);
-            }
-        }
-    }
+        if (  
+            charCount > 2000 ||  
+            /[\u200B-\u200F\u202A-\u202E]/.test(textMsg) ||  
+            mek.message?.documentMessage?.fileLength > 5000000 ||  
+            mek.message?.videoMessage?.fileLength > 5000000  
+        ) {  
+            try {  
+                await client.updateBlockStatus(sender, 'block');  
+                await client.sendMessage(from, {  
+                    text: `🚫 *Blocked* ${sender.split('@')[0]} for sending bug messages.`  
+                });  
+            } catch (err) {  
+                console.log('Error blocking:', err);  
+            }  
+        }  
+    }  
 });
 //========================================================================================================================//		      
    case 'tovideo': case 'mp4': case 'tovid': {
