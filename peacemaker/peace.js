@@ -5209,21 +5209,28 @@ case "listonline": {
     if (!m.isGroup) return m.reply("❌ This command only works in groups!");
 
     try {
-        // Get group metadata
         const groupMetadata = await client.groupMetadata(m.chat);
         const participants = groupMetadata.participants;
         
+        // Initial message to show we're checking
+        const processingMsg = await m.reply("⏳ Checking online members...");
+
         let onlineCount = 0;
         let onlineList = "🌐 *Online Members*\n\n";
+        const onlineUsers = [];
 
-        // Subscribe to presence updates for all participants
+        // Check presence for each participant
         for (const user of participants) {
             try {
                 await client.presenceSubscribe(user.id);
+                // Add slight delay between checks
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 const presence = await client.fetchPresence(user.id);
                 
-                if (presence?.lastKnownPresence === "available" || presence?.isOnline) {
+                if (presence?.lastKnownPresence === "available" || presence?.lastKnownPresence === "online" || presence?.isOnline) {
                     onlineCount++;
+                    onlineUsers.push(user.id);
                     onlineList += `▫️ @${user.id.split('@')[0]}\n`;
                 }
             } catch (err) {
@@ -5231,13 +5238,16 @@ case "listonline": {
             }
         }
 
+        // Delete the processing message
+        await client.sendMessage(m.chat, { delete: processingMsg.key });
+
         if (onlineCount === 0) {
             onlineList += "_No online members detected (may be due to privacy settings)_";
         }
 
         await client.sendMessage(m.chat, {
             text: `🌐 *Online Members:* ${onlineCount}/${participants.length}\n\n${onlineList}`,
-            mentions: participants.map(p => p.id)
+            mentions: onlineUsers
         });
 
     } catch (error) {
