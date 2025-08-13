@@ -4529,19 +4529,43 @@ const Buffer = await stickerResult.toBuffer();
 break;
 
 //========================================================================================================================//		      
-          case "dp": { 
- try { 
- ha = m.quoted.sender; 
- qd = await client.getName(ha); 
- pp2 = await client.profilePictureUrl(ha,'image'); 
- } catch {  
- pp2 = 'https://tinyurl.com/yx93l6da'; 
- } 
-  if (!m.quoted) throw `Tag a user!`; 
- bar = `Profile Picture of ${qd}`; 
- client.sendMessage(m.chat, { image: { url: pp2}, caption: bar, fileLength: "999999999999"}, { quoted: m}); 
- } 
- break;
+          case "dp": {
+  let ha;
+  let qd;
+  let pp2;
+  
+  if (m.quoted) {
+    // If a message is quoted
+    try { 
+      ha = m.quoted.sender;
+      qd = await client.getName(ha);
+      pp2 = await client.profilePictureUrl(ha, 'image');
+    } catch {  
+      pp2 = 'https://tinyurl.com/yx93l6da';
+    }
+  } else if (m.text.includes(' ')) {
+    // If a number is provided after "dp"
+    const number = m.text.split(' ')[1].trim();
+    try {
+      ha = number.includes('@') ? number : `${number}@s.whatsapp.net`;
+      qd = await client.getName(ha);
+      pp2 = await client.profilePictureUrl(ha, 'image');
+    } catch {
+      pp2 = 'https://tinyurl.com/yx93l6da';
+    }
+  } else {
+    // If neither quoted nor number provided
+    throw `Tag a user or provide a number after "dp"!`;
+  }
+  
+  const bar = `Profile Picture of ${qd}`;
+  await client.sendMessage(m.chat, { 
+    image: { url: pp2 }, 
+    caption: bar, 
+    fileLength: "999999999999"
+  }, { quoted: m });
+}
+break;
 
 //========================================================================================================================//		      
 case "list": case "vars": case "help":
