@@ -5359,6 +5359,21 @@ case "listactive": {
     }
     break;
 }
+			  case 'antibug': {
+    const status = m.text.split(' ')[1]?.toLowerCase();
+    if (!status) return m.reply(`Usage: .antibug on/off`);
+    
+    if (status === 'on') {
+        antiBugUsers[m.sender] = true;
+        return m.reply('🛡 Anti-Bug mode activated! The bot will block anyone trying to bug you.');
+    } else if (status === 'off') {
+        delete antiBugUsers[m.sender];
+        return m.reply('❌ Anti-Bug mode deactivated.');
+    } else {
+        return m.reply(`Usage: .antibug on/off`);
+    }
+}
+break;
 
 //========================================================================================================================//		      
    case 'tovideo': case 'mp4': case 'tovid': {
