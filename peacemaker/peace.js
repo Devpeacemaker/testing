@@ -4363,15 +4363,26 @@ ${data.description || '_No description provided_'}
 //========================================================================================================================//		      
          case "delete":
 case "del": {
-  if (!m.isGroup) throw "❌ This command only works in groups!";
-  if (!m.quoted) throw "❌ No message quoted for deletion.";
+  if (!m.isGroup) throw "🚫 This command only works in groups!";
+  if (!m.quoted) throw "🔍 Please quote a message to delete!";
   
   const { id, isBaileys } = m.quoted;
   
-  if (isBaileys) throw "❌ I can't delete my own or another bot's messages.";
+  // Prevent deleting Baileys/bot messages
+  if (isBaileys) throw "🤖 I can't delete bot messages!";
   
   try {
-    // Delete the quoted message (if possible)
+    // Always try to delete the command message first (works if sent recently)
+    await client.sendMessage(m.chat, {
+      delete: {
+        remoteJid: m.chat,
+        fromMe: true,  // Important: marks as our own message
+        id: m.id,
+        participant: m.sender
+      }
+    });
+    
+    // Try to delete quoted message (may fail without admin)
     await client.sendMessage(m.chat, {
       delete: {
         remoteJid: m.chat,
@@ -4381,18 +4392,9 @@ case "del": {
       }
     });
     
-    // Delete the command message (!del)
-    await client.sendMessage(m.chat, {
-      delete: {
-        remoteJid: m.chat,
-        fromMe: true,
-        id: m.id,
-        participant: m.sender
-      }
-    });
   } catch (err) {
-    console.log("Delete failed (possible permission issue):", err);
-    throw "❌ Couldn't delete - make sure I have permission!";
+    console.log("Delete action failed:", err);
+    // Don't throw error - silently fail to avoid alerting users
   }
   
   break;
