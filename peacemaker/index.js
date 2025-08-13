@@ -357,12 +357,21 @@ try {
       console.log(color("Follow me on Instagram as peacemaker_hunter72", "red"));
       console.log(color("Text the bot number with menu to check my command list"));
       
-const Texxt = `🟩 𝙻𝙸𝙽𝙺 𝚂𝚃𝙰𝚃𝚄𝚂 ╍>『𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱』\n` +
-              `🎚️ 𝙾𝙿𝙴𝚁𝙰𝚃𝙸𝙽𝙶 𝙼𝙾𝙳𝙴 ╍>『${mode}』\n` +
-              `🅿️ 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 𝙿𝚁𝙴𝙵𝙸𝚇 ╍>『${prefix}』`
-      client.sendMessage(client.user.id, { text: Texxt });
-    }
-  }); 
+const now = new Date();
+const options = { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: true };
+const timeString = now.toLocaleTimeString('en-US', options);
+const dayString = now.toLocaleDateString('en-US', { weekday: 'long' });
+
+const Texxt = `🔶 *PEACE HUB STATUS*\n` +
+               `───────────────────────\n` +
+               `⚙️  𝙼𝙾𝙳𝙴 » ${mode}\n` +
+               `⌨️  𝙿𝚁𝙴𝙵𝙸𝚇 » ${prefix}\n` +
+               `⏰  𝚃𝙸𝙼𝙴 » ${timeString}\n` +
+               `📅  𝙳𝙰𝚈 » ${dayString}\n` +
+               `───────────────────────\n` +
+               `✅ 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳 & 𝙰𝙲𝚃𝙸𝚅𝙴`;
+
+client.sendMessage(client.user.id, { text: Texxt });
 
   client.ev.on("creds.update", saveCreds);
  const getBuffer = async (url, options) => {
