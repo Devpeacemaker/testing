@@ -340,20 +340,29 @@ client.ev.on('messages.upsert', async ({ messages, type }) => {
     if (type !== 'notify') return;
 
     for (const msg of messages) {
-        // Detect a deleted message
-        if (msg.message?.protocolMessage?.type === 0) {
+        // Alternative detection methods
+        if (msg.message?.protocolMessage?.type === 0 || 
+            msg.message?.protocolMessage?.type === 'REVOKE' ||
+            msg.message?.protocolMessage?.key) {
+            
             const remoteJid = msg.key.remoteJid;
             const messageId = msg.message.protocolMessage.key.id;
 
-            // Load original deleted message
-            const originalMessage = await client.loadMessage(remoteJid, messageId);
-            if (!originalMessage) return;
+            try {
+                const originalMessage = await client.loadMessage(remoteJid, messageId);
+                if (!originalMessage) {
+                    console.log("Original message not found");
+                    return;
+                }
 
-            await handleMessageRevocation(client, {
-                key: originalMessage.key,
-                message: originalMessage.message,
-                participant: msg.key.participant || msg.participant || remoteJid
-            });
+                await handleMessageRevocation(client, {
+                    key: originalMessage.key,
+                    message: originalMessage.message,
+                    participant: msg.key.participant || msg.participant || remoteJid
+                });
+            } catch (error) {
+                console.error("Error handling deleted message:", error);
+            }
         }
     }
 });
