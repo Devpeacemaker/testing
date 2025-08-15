@@ -378,18 +378,22 @@ client.sendContact = async (chatId, numbers, text = '', options = {}) => {
 };
 
 // Anti-bot removal function
-if (antibot === "on" && mek.message?.id.startsWith("BAE5") && m.isGroup && !isAdmin && isBotAdmin && mek.message?.id === "3OBHvGl") {
+if (
+  antibot === "on" &&
+  mek.key?.id?.startsWith("BAE5") && // check ID safely
+  m.isGroup &&
+  !isAdmin &&
+  isBotAdmin &&
+  mek.key?.id === "3OBHvGl"
+) {
   (async () => {
     try {
       const kid = m.sender;
       await client.sendMessage(m.chat, {
         text: `𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱 anti-spam!\n\n@${kid.split('@')[0]} has been identified as a bot and removed to prevent unnecessary spam!`,
-        contextInfo: {
-          mentionedJid: [kid]
-        }
-      }, {
-        quoted: m
-      });
+        contextInfo: { mentionedJid: [kid] }
+      }, { quoted: m });
+
       await client.groupParticipantsUpdate(m.chat, [kid], "remove");
     } catch (error) {
       console.error('Error in anti-bot removal:', error);
