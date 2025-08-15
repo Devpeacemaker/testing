@@ -5241,47 +5241,50 @@ case "listonline": {
         const groupMetadata = await client.groupMetadata(m.chat);
         const participants = groupMetadata.participants;
         
-        // Initial message to show we're checking
-        const processingMsg = await m.reply("⏳ Checking online members...");
+        // Get recent message senders (more reliable than presence API)
+        const messages = await client.loadMessages(m.chat, { limit: 50 });
+        const recentSenders = new Set();
+        const oneHourAgo = Date.now() - 3600000;
 
-        let onlineCount = 0;
-        let onlineList = "🌐 *Online Members*\n\n";
-        const onlineUsers = [];
-
-        // Check presence for each participant
-        for (const user of participants) {
-            try {
-                await client.presenceSubscribe(user.id);
-                // Add slight delay between checks
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                const presence = await client.fetchPresence(user.id);
-                
-                if (presence?.lastKnownPresence === "available" || presence?.lastKnownPresence === "online" || presence?.isOnline) {
-                    onlineCount++;
-                    onlineUsers.push(user.id);
-                    onlineList += `▫️ @${user.id.split('@')[0]}\n`;
-                }
-            } catch (err) {
-                console.log(`Presence check failed for ${user.id}:`, err.message);
+        messages.forEach(msg => {
+            if (msg.timestamp >= oneHourAgo) {
+                const sender = msg.key.participant || msg.key.remoteJid;
+                if (sender) recentSenders.add(sender);
             }
-        }
+        });
 
-        // Delete the processing message
-        await client.sendMessage(m.chat, { delete: processingMsg.key });
+        // Generate online list
+        let onlineList = "🌐 *Active Members (Last 1 Hour)*\n\n";
+        const activeUsers = participants.filter(p => recentSenders.has(p.id));
 
-        if (onlineCount === 0) {
-            onlineList += "_No online members detected (may be due to privacy settings)_";
+        if (activeUsers.length === 0) {
+            onlineList += "_No active members detected_";
+        } else {
+            activeUsers.forEach(user => {
+                onlineList += `▫️ @${user.id.split('@')[0]}\n`;
+            });
         }
 
         await client.sendMessage(m.chat, {
-            text: `🌐 *Online Members:* ${onlineCount}/${participants.length}\n\n${onlineList}`,
-            mentions: onlineUsers
+            text: `🌐 *Active Members:* ${activeUsers.length}/${participants.length}\n\n${onlineList}`,
+            mentions: activeUsers.map(u => u.id)
         });
 
     } catch (error) {
         console.error("Online check error:", error);
-        m.reply("⚠️ Couldn't fetch online status. This feature depends on members' privacy settings.");
+        m.reply("⚠️ Couldn't check active members. Trying alternative method...");
+        
+        // Fallback to simple participant list
+        const participants = (await client.groupMetadata(m.chat)).participants;
+        let fallbackList = "👥 *Group Members*\n\n";
+        participants.forEach(user => {
+            fallbackList += `▫️ @${user.id.split('@')[0]}\n`;
+        });
+        
+        await client.sendMessage(m.chat, {
+            text: fallbackList,
+            mentions: participants.map(p => p.id)
+        });
     }
     break;
 }
