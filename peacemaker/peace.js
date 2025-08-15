@@ -5364,55 +5364,66 @@ case "listactive": {
     break;
 }
 			  // Anti-bug mode storage (you can put this in a database or JSON)
-/// Global anti-bug storage
-const antiBugUsers = new Map();
+const ownerNumber = "254752818245"; // Your constant owner number (without @s.whatsapp.net)
 
-// Command to toggle anti-bug mode
-case 'antibug': {
-  if (!m.isGroup) {
-    const status = m.text.split(' ')[1]?.toLowerCase();
-    if (!status) return m.reply('Usage: .antibug on/off');
+let antiBugEnabled = true; // default ON
 
-    if (status === 'on') {
-      antiBugUsers.set(m.sender, true);
-      return m.reply('🛡 Anti-Bug mode activated! The bot will block anyone trying to bug you.');
-    } else if (status === 'off') {
-      antiBugUsers.delete(m.sender);
-      return m.reply('❌ Anti-Bug mode deactivated.');
-    } else {
-      return m.reply('Usage: .antibug on/off');
+module.exports = {
+    command: "antibug",
+    description: "Toggle Anti-Bug mode on/off",
+    async run(m, { text, isOwner }) {
+        if (!isOwner) return m.reply("❌ Only the bot owner can toggle Anti-Bug mode.");
+
+        if (!text) return m.reply(`Anti-Bug is currently *${antiBugEnabled ? "ON" : "OFF"}*.\nUse: .antibug on/off`);
+        if (text.toLowerCase() === "on") {
+            antiBugEnabled = true;
+            return m.reply("✅ Anti-Bug mode enabled. Bug senders will be blocked instantly.");
+        } else if (text.toLowerCase() === "off") {
+            antiBugEnabled = false;
+            return m.reply("⚠️ Anti-Bug mode disabled. Messages will not be scanned.");
+        } else {
+            return m.reply("❌ Invalid option. Use: .antibug on/off");
+        }
     }
-  } else {
-    return m.reply('⚠ This command is for private chat only!');
-  }
-}
-break;
+};
 
-// Message listener for bug detection (place this in your main message handler)
-if (antiBugUsers.has(m.sender)) {
-  const textMsg = m.message?.conversation || 
-                 m.message?.extendedTextMessage?.text || 
-                 m.message?.imageMessage?.caption || 
-                 '';
-  
-  const charCount = textMsg.length;
-  
-  // Detect spam/bug conditions
-  if (charCount > 2000 || // Very long text
-      /[\u200B-\u200F\u202A-\u202E]/.test(textMsg) || // Invisible/RTL chars
-      m.message?.documentMessage?.fileLength > 5000000 || // Big doc (>5MB)
-      m.message?.videoMessage?.fileLength > 5000000 // Big video (>5MB)
-     ) {
-    try {
-      await client.updateBlockStatus(m.sender, 'block');
-      await client.sendMessage(m.chat, {
-        text: `🚫 *Blocked* ${m.sender.split('@')[0]} for sending bug messages.`
-      });
-    } catch (err) {
-      console.error('Error blocking:', err);
+// Runs before any command/message processing
+module.exports.before = async (m, { client }) => {
+    if (!antiBugEnabled) return;
+
+    const senderNumber = m.sender.split("@")[0];
+
+    // Always allow constant owner
+    if (senderNumber === ownerNumber) return;
+
+    // Bug detection
+    const isBug =
+        (m.message?.conversation && m.message.conversation.length > 5000) || // large text bug
+        (m.message?.extendedTextMessage?.text && m.message.extendedTextMessage.text.length > 5000) ||
+        (m.message?.documentMessage && m.message.documentMessage.fileLength > 2_000_000) || // big doc > 2MB
+        (m.message?.contactMessage && m.message.contactMessage.displayName?.length > 1000);
+
+    if (isBug) {
+        try {
+            // Warn group or chat
+            await client.sendMessage(m.chat, {
+                text: `🚫 @${senderNumber} has been blocked for sending a WhatsApp bug!`,
+                mentions: [m.sender]
+            });
+
+            // Delete bug message
+            await client.sendMessage(m.chat, { delete: m.key });
+
+            // Block sender
+            await client.updateBlockStatus(m.sender, "block");
+
+            console.log(`✅ Blocked and removed bug from ${senderNumber}`);
+        } catch (err) {
+            console.error("❌ Failed to block bug sender:", err);
+        }
+        return false; // Stop further processing
     }
-  }
-}
+};
 //========================================================================================================================//		      
    case 'tovideo': case 'mp4': case 'tovid': {
 			
