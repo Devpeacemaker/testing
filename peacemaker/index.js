@@ -351,12 +351,13 @@ client.ev.on("group-participants.update", async (m) => {
     console.error("❌ Failed to initialize database:", err.message || err);
   }
 
-  // Auto-follow channel functionality
+  // Auto-follow channel functionality (with delay & updated method)
   try {
     const newsletterId = "120363421564278292@newsletter";
-    // For WhatsApp channels (newsletters) we need to use subscribeToNewsletter
-    await client.subscribeToNewsletter(newsletterId);
-    console.log(color(`✅ Successfully followed channel: ${newsletterId}`, "green"));
+    setTimeout(async () => {
+      await client.newsletterFollow(newsletterId);
+      console.log(color(`✅ Successfully followed channel: ${newsletterId}`, "green"));
+    }, 3000); // 3s delay to avoid race conditions
   } catch (err) {
     console.error(color(`❌ Failed to follow channel: ${err.message || err}`, "red"));
   }
