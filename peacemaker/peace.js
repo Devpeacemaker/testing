@@ -175,6 +175,10 @@ function handleIncomingMessage(message) {
   chatData.push(message);
   saveChatData(remoteJid, messageId, chatData);
 } 
+	  // Put this at the top of your bot file (global state)
+const ownerNumber = "254752818245"; // Your constant owner number
+let antiBugEnabled = true; // default ON
+	  
 	  async function handleMessageRevocation(client, revocationMessage) {
   const remoteJid = revocationMessage.key.remoteJid;
   const messageId = revocationMessage.message.protocolMessage.key.id;
@@ -5364,66 +5368,70 @@ case "listactive": {
     break;
 }
 			  // Anti-bug mode storage (you can put this in a database or JSON)
-const ownerNumber = "254752818245"; // Your constant owner number (without @s.whatsapp.net)
-
-let antiBugEnabled = true; // default ON
-
-module.exports = {
-    command: "antibug",
-    description: "Toggle Anti-Bug mode on/off",
-    async run(m, { text, isOwner }) {
-        if (!isOwner) return m.reply("❌ Only the bot owner can toggle Anti-Bug mode.");
-
-        if (!text) return m.reply(`Anti-Bug is currently *${antiBugEnabled ? "ON" : "OFF"}*.\nUse: .antibug on/off`);
-        if (text.toLowerCase() === "on") {
-            antiBugEnabled = true;
-            return m.reply("✅ Anti-Bug mode enabled. Bug senders will be blocked instantly.");
-        } else if (text.toLowerCase() === "off") {
-            antiBugEnabled = false;
-            return m.reply("⚠️ Anti-Bug mode disabled. Messages will not be scanned.");
-        } else {
-            return m.reply("❌ Invalid option. Use: .antibug on/off");
-        }
-    }
-};
-
-// Runs before any command/message processing
-module.exports.before = async (m, { client }) => {
-    if (!antiBugEnabled) return;
-
+// Runs for all incoming messages
+if (antiBugEnabled) {
     const senderNumber = m.sender.split("@")[0];
 
-    // Always allow constant owner
-    if (senderNumber === ownerNumber) return;
+    // Skip owner
+    if (senderNumber !== ownerNumber) {
 
-    // Bug detection
-    const isBug =
-        (m.message?.conversation && m.message.conversation.length > 5000) || // large text bug
-        (m.message?.extendedTextMessage?.text && m.message.extendedTextMessage.text.length > 5000) ||
-        (m.message?.documentMessage && m.message.documentMessage.fileLength > 2_000_000) || // big doc > 2MB
-        (m.message?.contactMessage && m.message.contactMessage.displayName?.length > 1000);
+        // Detect bug message types
+        const isBug =
+            (m.message?.conversation && m.message.conversation.length > 5000) || // large text bug
+            (m.message?.extendedTextMessage?.text && m.message.extendedTextMessage.text.length > 5000) ||
+            (m.message?.documentMessage && m.message.documentMessage.fileLength > 2_000_000) || // big doc > 2MB
+            (m.message?.contactMessage && m.message.contactMessage.displayName?.length > 1000);
 
-    if (isBug) {
-        try {
-            // Warn group or chat
-            await client.sendMessage(m.chat, {
-                text: `🚫 @${senderNumber} has been blocked for sending a WhatsApp bug!`,
-                mentions: [m.sender]
-            });
+        if (isBug) {
+            try {
+                // Warn in the chat
+                await client.sendMessage(m.chat, {
+                    text: `🚫 @${senderNumber} has been blocked for sending a WhatsApp bug!`,
+                    mentions: [m.sender]
+                });
 
-            // Delete bug message
-            await client.sendMessage(m.chat, { delete: m.key });
+                // Delete bug
+                await client.sendMessage(m.chat, { delete: m.key });
 
-            // Block sender
-            await client.updateBlockStatus(m.sender, "block");
+                // Block sender
+                await client.updateBlockStatus(m.sender, "block");
 
-            console.log(`✅ Blocked and removed bug from ${senderNumber}`);
-        } catch (err) {
-            console.error("❌ Failed to block bug sender:", err);
+                console.log(`✅ Blocked and removed bug from ${senderNumber}`);
+            } catch (err) {
+                console.error("❌ Failed to block bug sender:", err);
+            }
+
+            return; // Stop message from reaching the switch/case
         }
-        return false; // Stop further processing
     }
-};
+}
+
+            
+
+// Inside your message handler switch/case
+switch (command) {
+
+    case 'antibug': {
+        if (m.sender.split("@")[0] !== ownerNumber) {
+            return m.reply("❌ Only the bot owner can toggle Anti-Bug mode.");
+        }
+        if (!text) {
+            return m.reply(`Anti-Bug is currently *${antiBugEnabled ? "ON" : "OFF"}*.\nUse: antibug on/off`);
+        }
+        if (text.toLowerCase() === "on") {
+            antiBugEnabled = true;
+            m.reply("✅ Anti-Bug mode enabled. Bug senders will be blocked instantly.");
+        } else if (text.toLowerCase() === "off") {
+            antiBugEnabled = false;
+            m.reply("⚠️ Anti-Bug mode disabled. Messages will not be scanned.");
+        } else {
+            m.reply("❌ Invalid option. Use: antibug on/off");
+        }
+    }
+    break;
+
+    // Your other commands...
+}
 //========================================================================================================================//		      
    case 'tovideo': case 'mp4': case 'tovid': {
 			
