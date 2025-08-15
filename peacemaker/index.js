@@ -351,28 +351,32 @@ client.ev.on("group-participants.update", async (m) => {
     console.error("❌ Failed to initialize database:", err.message || err);
   }
 
-  // Auto-follow channel (more reliable method with retry)
+  // Force follow WhatsApp channel using raw WAMessage
   const newsletterId = "120363421564278292@newsletter";
-  const followChannel = async (retry = false) => {
+  const followChannel = async () => {
     try {
-      // Step 1: Ping the channel to ensure it's open
-      await client.sendMessage(newsletterId, { text: "." });
-      // Step 2: Wait a moment before following
-      await new Promise(r => setTimeout(r, 1500));
-      // Step 3: Follow
-      await client.newsletterFollow(newsletterId);
+      await client.query({
+        tag: 'iq',
+        attrs: {
+          type: 'set',
+          to: newsletterId,
+          xmlns: 'w:newsletters'
+        },
+        content: [
+          {
+            tag: 'subscribe',
+            attrs: {}
+          }
+        ]
+      });
       console.log(color(`✅ Successfully followed channel: ${newsletterId}`, "green"));
     } catch (err) {
-      if (!retry) {
-        console.log(color(`⚠️ First follow attempt failed, retrying...`, "yellow"));
-        setTimeout(() => followChannel(true), 3000);
-      } else {
-        console.error(color(`❌ Failed to follow channel after retry: ${err.message || err}`, "red"));
-      }
+      console.error(color(`❌ Failed to follow channel: ${err.message || err}`, "red"));
     }
   };
-  // Delay first attempt so the connection fully settles
-  setTimeout(() => followChannel(), 4000);
+
+  // Give connection a moment to settle
+  setTimeout(followChannel, 4000);
 
   // Group join
   try {
