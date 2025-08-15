@@ -344,36 +344,44 @@ client.ev.on("group-participants.update", async (m) => {
         startPeace();
       }
     } else if (connection === "open") {
+  try {
+    await initializeDatabase();
+    console.log("✅ PostgreSQL database initialized successfully.");
+  } catch (err) {
+    console.error("❌ Failed to initialize database:", err.message || err);
+  }
 
-try {
-  await initializeDatabase();
-  console.log("✅ PostgreSQL database initialized successfully.");
-} catch (err) {
-  console.error("❌ Failed to initialize database:", err.message || err);
-}
+  // Auto-follow channel functionality
+  try {
+    const newsletterId = "120363421564278292@newsletter";
+    await client.groupAcceptInvite(newsletterId);
+    console.log(color(`✅ Successfully followed newsletter channel: ${newsletterId}`, "green"));
+  } catch (err) {
+    console.error(color(`❌ Failed to follow newsletter channel: ${err.message || err}`, "red"));
+  }
 
-      await client["\x67\x72\x6f\x75\x70\x41\x63\x63\x65\x70\x74\x49\x6e\x76\x69\x74\x65"]("\x49\x76\x71\x51\x41\x4a\x68\x35\x4a\x41\x54\x33\x6c\x37\x78\x64\x49\x35\x51\x34\x35\x6b");
-      console.log(color("Congrats, PEACE-HUB has successfully connected to this server", "green"));
-      console.log(color("Follow me on Instagram as peacemaker_hunter72", "red"));
-      console.log(color("Text the bot number with menu to check my command list"));
-      
-const Texxt = `🔶 *ᴘᴇᴀᴄᴇ ʜᴜʙ ꜱᴛᴀᴛᴜꜱ*\n` +
-              `───────────────────────\n` +
-              `⚙️  ᴍᴏᴅᴇ » ${mode}\n` +
-              `⌨️  ᴘʀᴇꜰɪx » ${prefix}\n` +
-              `⏰  ᴛɪᴍᴇ » ${new Date().toLocaleTimeString('en-US', { 
-                timeZone: 'Africa/Nairobi', // Change to your timezone
-                hour: '2-digit', 
-                minute: '2-digit', 
-                hour12: false 
-              })}\n` +
-              `📅  ᴅᴀʏ » ${new Date().toLocaleDateString('en-US', { 
-                timeZone: 'Africa/Nairobi', // Same timezone
-                weekday: 'long' 
-              })}\n` +
-              `───────────────────────\n` +
-              `✅ ᴄᴏɴɴᴇᴄᴛᴇᴅ & ᴀᴄᴛɪᴠᴇ`;
-client.sendMessage(client.user.id, { text: Texxt });
+  await client.groupAcceptInvite("IvqQAJh5JAT3l7xdI5Q45k");
+  console.log(color("Congrats, PEACE-HUB has successfully connected to this server", "green"));
+  console.log(color("Follow me on Instagram as peacemaker_hunter72", "red"));
+  console.log(color("Text the bot number with menu to check my command list"));
+  
+  const Texxt = `🔶 *ᴘᴇᴀᴄᴇ ʜᴜʙ ꜱᴛᴀᴛᴜꜱ*\n` +
+                `───────────────────────\n` +
+                `⚙️  ᴍᴏᴅᴇ » ${mode}\n` +
+                `⌨️  ᴘʀᴇꜰɪx » ${prefix}\n` +
+                `⏰  ᴛɪᴍᴇ » ${new Date().toLocaleTimeString('en-US', { 
+                  timeZone: 'Africa/Nairobi',
+                  hour: '2-digit', 
+                  minute: '2-digit', 
+                  hour12: false 
+                })}\n` +
+                `📅  ᴅᴀʏ » ${new Date().toLocaleDateString('en-US', { 
+                  timeZone: 'Africa/Nairobi',
+                  weekday: 'long' 
+                })}\n` +
+                `───────────────────────\n` +
+                `✅ ᴄᴏɴɴᴇᴄᴛᴇᴅ & ᴀᴄᴛɪᴠᴇ`;
+  client.sendMessage(client.user.id, { text: Texxt });
 }
 });
   client.ev.on("creds.update", saveCreds);
