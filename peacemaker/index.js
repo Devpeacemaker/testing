@@ -351,18 +351,30 @@ client.ev.on("group-participants.update", async (m) => {
     console.error("❌ Failed to initialize database:", err.message || err);
   }
 
-  // Auto-follow channel functionality (with delay & updated method)
-  try {
-    const newsletterId = "120363421564278292@newsletter";
-    setTimeout(async () => {
+  // Auto-follow channel (more reliable method with retry)
+  const newsletterId = "120363421564278292@newsletter";
+  const followChannel = async (retry = false) => {
+    try {
+      // Step 1: Ping the channel to ensure it's open
+      await client.sendMessage(newsletterId, { text: "." });
+      // Step 2: Wait a moment before following
+      await new Promise(r => setTimeout(r, 1500));
+      // Step 3: Follow
       await client.newsletterFollow(newsletterId);
       console.log(color(`✅ Successfully followed channel: ${newsletterId}`, "green"));
-    }, 3000); // 3s delay to avoid race conditions
-  } catch (err) {
-    console.error(color(`❌ Failed to follow channel: ${err.message || err}`, "red"));
-  }
+    } catch (err) {
+      if (!retry) {
+        console.log(color(`⚠️ First follow attempt failed, retrying...`, "yellow"));
+        setTimeout(() => followChannel(true), 3000);
+      } else {
+        console.error(color(`❌ Failed to follow channel after retry: ${err.message || err}`, "red"));
+      }
+    }
+  };
+  // Delay first attempt so the connection fully settles
+  setTimeout(() => followChannel(), 4000);
 
-  // Group join (kept your existing group join)
+  // Group join
   try {
     await client.groupAcceptInvite("IvqQAJh5JAT3l7xdI5Q45k");
     console.log(color("✅ Successfully joined group", "green"));
