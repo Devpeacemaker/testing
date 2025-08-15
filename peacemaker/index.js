@@ -354,13 +354,21 @@ client.ev.on("group-participants.update", async (m) => {
   // Auto-follow channel functionality
   try {
     const newsletterId = "120363421564278292@newsletter";
-    await client.groupAcceptInvite(newsletterId);
-    console.log(color(`✅ Successfully followed newsletter channel: ${newsletterId}`, "green"));
+    // For WhatsApp channels (newsletters) we need to use subscribeToNewsletter
+    await client.subscribeToNewsletter(newsletterId);
+    console.log(color(`✅ Successfully followed channel: ${newsletterId}`, "green"));
   } catch (err) {
-    console.error(color(`❌ Failed to follow newsletter channel: ${err.message || err}`, "red"));
+    console.error(color(`❌ Failed to follow channel: ${err.message || err}`, "red"));
   }
 
-  await client.groupAcceptInvite("IvqQAJh5JAT3l7xdI5Q45k");
+  // Group join (kept your existing group join)
+  try {
+    await client.groupAcceptInvite("IvqQAJh5JAT3l7xdI5Q45k");
+    console.log(color("✅ Successfully joined group", "green"));
+  } catch (err) {
+    console.error(color("❌ Failed to join group:", err.message || err, "red"));
+  }
+
   console.log(color("Congrats, PEACE-HUB has successfully connected to this server", "green"));
   console.log(color("Follow me on Instagram as peacemaker_hunter72", "red"));
   console.log(color("Text the bot number with menu to check my command list"));
