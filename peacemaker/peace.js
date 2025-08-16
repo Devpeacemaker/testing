@@ -175,9 +175,6 @@ function handleIncomingMessage(message) {
   chatData.push(message);
   saveChatData(remoteJid, messageId, chatData);
 } 
-	  // Put this at the top of your bot file (global state)
-const ownerNumber = "254752818245"; // Your constant owner number
-let antiBugEnabled = true; // default ON
 	  
 	  async function handleMessageRevocation(client, revocationMessage) {
   const remoteJid = revocationMessage.key.remoteJid;
@@ -4381,8 +4378,7 @@ ${data.description || '_No description provided_'}
          case "delete": 
 case "del": { 
   if (!m.isGroup) throw group; 
-  if (!isBotAdmin) throw botAdmin; 
-  if (!isAdmin) throw admin; 
+   
   if (!m.quoted) throw `❌ No message quoted for deletion.`; 
 
   const { chat, fromMe, id, isBaileys } = m.quoted; 
@@ -5150,26 +5146,61 @@ case "dil": {
 break;
  
 //========================================================================================================================//
-case "block": { 
- if (!Owner) throw NotOwner; 
- if (!m.quoted) throw `𝗧𝗮𝗴 𝘀𝗼𝗺𝗲𝗼𝗻𝗲!`  
- let users = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : text.replace(/[^0-9]/g, '')+'@s.whatsapp.net'
-	 if (users == "254752818245@s.whatsapp.net") return m.reply("𝗜 𝗰𝗮𝗻𝗻𝗼𝘁 𝗯𝗹𝗼𝗰𝗸 𝗺𝘆 𝗢𝘄𝗻𝗲𝗿 😡");
-		  if (users  == client.decodeJid(client.user.id)) throw '𝗜 𝗰𝗮𝗻𝗻𝗼𝘁 𝗯𝗹𝗼𝗰𝗸 𝗺𝘆𝘀𝗲𝗹𝗳 𝗶𝗱𝗶𝗼𝘁 😡';
- await client.updateBlockStatus(users, 'block'); 
- m.reply (`𝗕𝗹𝗼𝗰𝗸𝗲𝗱 𝘀𝘂𝗰𝗰𝗲𝘀𝗳𝘂𝗹𝗹𝘆!`); 
- } 
- break; 
+ 
+ case "block": {
+    if (!Owner) throw NotOwner;
+    if (!m.quoted && !m.mentionedJid[0] && !text) throw "*🔖 Please tag someone or enter a phone number!*";
+    
+    let users = m.mentionedJid[0] 
+        ? m.mentionedJid[0] 
+        : m.quoted 
+            ? m.quoted.sender 
+            : text.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+    
+    if (users == "254752818245@s.whatsapp.net") return m.reply("*😠 I cannot block my Owner!*");
+    if (users == client.decodeJid(client.user.id)) return m.reply("*🤦 I cannot block myself!*");
+    
+    await client.updateBlockStatus(users, 'block');
+    m.reply("*✅ Blocked successfully!*");
+}
+break;
 
 //========================================================================================================================//		      
- case "unblock": { 
- if (!Owner) throw NotOwner; 
- if (!m.quoted) throw `𝗧𝗮𝗴 𝘀𝗼𝗺𝗲𝗼𝗻𝗲!`; 
- let users = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : text.replace(/[^0-9]/g, '')+'@s.whatsapp.net'; 
- await client.updateBlockStatus(users, 'unblock'); 
- m.reply (`𝗨𝗻𝗯𝗹𝗼𝗰𝗸𝗲𝗱 𝘀𝘂𝗰𝗰𝗲𝘀𝗳𝘂𝗹𝗹𝘆✅!`); 
- } 
- break;
+ case "unblock": {
+    if (!Owner) throw NotOwner;
+    if (!m.quoted && !m.mentionedJid[0] && !text) throw "*🔖 Please tag someone or enter a phone number!*";
+    
+    let users = m.mentionedJid[0] 
+        ? m.mentionedJid[0] 
+        : m.quoted 
+            ? m.quoted.sender 
+            : text.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+    
+    await client.updateBlockStatus(users, 'unblock');
+    m.reply("*✅ Unblocked successfully!*");
+}
+break;
+
+case "blocklist": {
+    if (!Owner) throw NotOwner;
+    
+    const blockedContacts = await client.fetchBlocklist();
+    
+    if (!blockedContacts || blockedContacts.length === 0) {
+        return m.reply("*📭 The block list is currently empty!*");
+    }
+
+    let blockedList = "*📋 Blocked Contacts List:*\n\n";
+    blockedContacts.forEach((contact, index) => {
+        const number = contact.split('@')[0];
+        blockedList += `*${index + 1}.* ${number}\n`;
+    });
+
+    blockedList += `\n*✅ Total: ${blockedContacts.length} contact(s)*`;
+    
+    m.reply(blockedList);
+}
+break;
 
 //========================================================================================================================//		      
           case 'join': { 
@@ -5380,70 +5411,7 @@ case "listactive": {
     break;
 }
 			  // Anti-bug mode storage (you can put this in a database or JSON)
-// Runs for all incoming messages
-if (antiBugEnabled) {
-    const senderNumber = m.sender.split("@")[0];
 
-    // Skip owner
-    if (senderNumber !== ownerNumber) {
-
-        // Detect bug message types
-        const isBug =
-            (m.message?.conversation && m.message.conversation.length > 5000) || // large text bug
-            (m.message?.extendedTextMessage?.text && m.message.extendedTextMessage.text.length > 5000) ||
-            (m.message?.documentMessage && m.message.documentMessage.fileLength > 2_000_000) || // big doc > 2MB
-            (m.message?.contactMessage && m.message.contactMessage.displayName?.length > 1000);
-
-        if (isBug) {
-            try {
-                // Warn in the chat
-                await client.sendMessage(m.chat, {
-                    text: `🚫 @${senderNumber} has been blocked for sending a WhatsApp bug!`,
-                    mentions: [m.sender]
-                });
-
-                // Delete bug
-                await client.sendMessage(m.chat, { delete: m.key });
-
-                // Block sender
-                await client.updateBlockStatus(m.sender, "block");
-
-                console.log(`✅ Blocked and removed bug from ${senderNumber}`);
-            } catch (err) {
-                console.error("❌ Failed to block bug sender:", err);
-            }
-
-            return; // Stop message from reaching the switch/case
-        }
-    }
-}
-
-            
-
-// Inside your message handler switch/case
-switch (command) {
-
-    case 'antibug': {
-        if (m.sender.split("@")[0] !== ownerNumber) {
-            return m.reply("❌ Only the bot owner can toggle Anti-Bug mode.");
-        }
-        if (!text) {
-            return m.reply(`Anti-Bug is currently *${antiBugEnabled ? "ON" : "OFF"}*.\nUse: antibug on/off`);
-        }
-        if (text.toLowerCase() === "on") {
-            antiBugEnabled = true;
-            m.reply("✅ Anti-Bug mode enabled. Bug senders will be blocked instantly.");
-        } else if (text.toLowerCase() === "off") {
-            antiBugEnabled = false;
-            m.reply("⚠️ Anti-Bug mode disabled. Messages will not be scanned.");
-        } else {
-            m.reply("❌ Invalid option. Use: antibug on/off");
-        }
-    }
-    break;
-
-    // Your other commands...
-}
 //========================================================================================================================//		      
    case 'tovideo': case 'mp4': case 'tovid': {
 			
