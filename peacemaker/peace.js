@@ -781,12 +781,17 @@ break;
 
 case "antidelete":
 case "ad": {
-    if (!m.chat.endsWith('@g.us')) return m.reply("This only works in groups!");
-    
     const userJid = m.sender;
-    const current = global.antideleteDB[m.chat] || { mode: 'off' };
+    const chatJid = m.isGroup ? m.chat : userJid; // Store settings per-chat for groups, per-user for DMs
     
-    // Cycle modes
+    // Initialize if doesn't exist
+    if (!global.antideleteDB[chatJid]) {
+        global.antideleteDB[chatJid] = { mode: 'off' };
+    }
+    
+    const current = global.antideleteDB[chatJid];
+    
+    // Cycle through modes
     let newMode;
     switch(current.mode) {
         case 'off': newMode = 'private'; break;
@@ -795,18 +800,23 @@ case "ad": {
     }
     
     // Update settings
-    global.antideleteDB[m.chat] = {
+    global.antideleteDB[chatJid] = {
         mode: newMode,
         setBy: userJid,
         lastUpdated: Date.now()
     };
     
+    const modeInfo = {
+        'private': '📩 Deleted messages will be sent to my DM',
+        'chat': '💬 Deleted messages will appear here',
+        'off': '❌ Anti-delete disabled'
+    };
+    
     await m.reply(
         `*🛡️ Anti-Delete ${newMode.toUpperCase()}*\n` +
-        `• Set by: @${userJid.split('@')[0]}\n` +
-        `• ${newMode === 'private' ? 'Deleted messages will be sent to my DM' : ''}` +
-        `• ${newMode === 'chat' ? 'Deleted messages will appear here' : ''}` +
-        `• ${newMode === 'off' ? 'Feature disabled' : ''}`,
+        `• Mode: ${newMode}\n` +
+        `• Scope: ${m.isGroup ? 'This Group' : 'Our DMs'}\n` +
+        `• ${modeInfo[newMode]}`,
         { mentions: [userJid] }
     );
     break;
