@@ -1144,19 +1144,23 @@ case 'quran': {
   break;
 		      
 //========================================================================================================================//	
-case "pair": 
+case "pair":
 case "rent": {
     // Check if there's a query or quoted message
     let targetNumber = q;
+    
     if (!q && m.quoted) {
-        // Extract number from quoted message
-        const quotedContent = m.quoted.message?.conversation || m.quoted.text;
-        if (quotedContent) {
-            targetNumber = quotedContent.match(/\d+/g)?.join(''); // Extract digits
+        // Extract the quoted message content
+        const quotedMsg = m.quoted.message?.conversation || m.quoted.text || m.quoted?.caption || '';
+        
+        // Try to extract a phone number from the quoted message
+        const numberMatch = quotedMsg.match(/\d{6,20}/); // Match sequences of 6-20 digits
+        if (numberMatch) {
+            targetNumber = numberMatch[0];
         }
     }
     
-    if (!targetNumber) return await reply("Please provide valid Whatsapp number  Example- pair 254752818xxx");
+    if (!targetNumber) return await reply("Please provide a valid WhatsApp number\nExample: pair 254752818xxx\nOr quote a message containing a phone number");
 
     try {
         const numbers = targetNumber.split(',')
@@ -1172,18 +1176,16 @@ case "rent": {
             const result = await client.onWhatsApp(whatsappID);
 
             if (!result[0]?.exists) {  
-                return m.reply(`That number is not registered on WhatsApp❗️`);  
+                return m.reply(`The number ${number} is not registered on WhatsApp❗️`);  
             }
 
-            m.reply("Wait a moment for the code")
+            await m.reply("Wait a moment for the code...");
 
             let { data } = await axios(`https://peace-hub-mcbo.onrender.com/code?number=${number}`);  
             let code = data.code;
 
-            const Code = `${code}`;
             await sleep(messageDelay);
-
-            await m.reply(Code);  
+            await m.reply(`Pairing code: ${code}`);  
         }  
     } catch (error) {  
         console.error(error);  
