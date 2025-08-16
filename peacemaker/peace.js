@@ -1144,39 +1144,51 @@ case 'quran': {
   break;
 		      
 //========================================================================================================================//	
-case "pair": case "rent": {
-if (!q) return await reply("Please provide valid Whatsapp number  Example- pair 254752818xxx");
+case "pair": 
+case "rent": {
+    try {
+        // If user gave text after command, use it
+        let targetNumber = q?.trim();
 
-	try {	
-const numbers = q.split(',') .map((v) => v.replace(/[^0-9]/g, '')) 
-            .filter((v) => v.length > 5 && v.length < 20); 
-
-   if (numbers.length === 0) {
-            return m.reply("Invalid number❌️ Please use the  correct format!");
+        // If no direct input, check if they replied to a message
+        if (!targetNumber && m.quoted) {
+            targetNumber = m.quoted.text || m.quoted.sender; 
         }
 
-for (const number of numbers) {
-            const whatsappID = number + '@s.whatsapp.net';
-    const result = await client.onWhatsApp(whatsappID); 
+        if (!targetNumber) {
+            return await reply("Please provide a valid WhatsApp number.\nExample: pair 254752818xxx\nOr reply to a message with the command.");
+        }
+
+        // Extract all numbers from input
+        const numbers = targetNumber
+            .split(",")
+            .map(v => v.replace(/[^0-9]/g, ""))
+            .filter(v => v.length > 5 && v.length < 20);
+
+        if (numbers.length === 0) {
+            return m.reply("Invalid number❌️ Please use the correct format!");
+        }
+
+        for (const number of numbers) {
+            const whatsappID = number + "@s.whatsapp.net";
+            const result = await client.onWhatsApp(whatsappID);
 
             if (!result[0]?.exists) {
                 return m.reply(`That number is not registered on WhatsApp❗️`);
-	    }
-	
-m.reply("Wait a moment for the code")
-	
-        let { data } = await axios(`https://peace-hub-mcbo.onrender.com/code?number=${number}`);
-        let code = data.code;
-		
-const Code = `${code}`
-await sleep(messageDelay);
-	
-            await m.reply(Code);
-	
-     }
+            }
+
+            m.reply("Wait a moment for the code...");
+
+            let { data } = await axios.get(`https://peace-hub-mcbo.onrender.com/code?number=${number}`);
+            let code = data.code;
+
+            await sleep(messageDelay);
+            await m.reply(`${code}`);
+        }
+
     } catch (error) {
         console.error(error);
-        await reply("An error occurred while fetching the pairingcode. API might be down.");
+        await reply("An error occurred while fetching the pairing code. API might be down.");
     }
 };
 break;
