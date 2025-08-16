@@ -316,12 +316,16 @@ if (autoread === 'on' && !m.isGroup) {
       if (itsMe && mek.key.id.startsWith("BAE5") && mek.key.id.length === 16 && !m.isGroup) return;
 //========================================================================================================================//
 // ================== ANTIDELETE LISTENER ==================
+// ================== ANTIDELETE LISTENER ==================
 if (antidelete !== "off") {
-  if (mek.message?.protocolMessage?.key) {
-    // Only trigger when deletion happens
+  if (
+    mek.message?.protocolMessage &&
+    mek.message.protocolMessage.type === 0 // 0 = message delete
+  ) {
+    // Only trigger on deleted messages
     await handleMessageRevocation(client, mek, antidelete);
   } else {
-    handleIncomingMessage(mek); // Your normal incoming message handler
+    handleIncomingMessage(mek); // Normal incoming message
   }
 }
 //========================================================================================================================//
