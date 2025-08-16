@@ -780,14 +780,13 @@ case "antilinkall": {
 break;		      
 
 case "antidelete":
-case "ad": { // You can use !antidelete or !ad
+case "ad": {
+    if (!m.chat.endsWith('@g.us')) return m.reply("This only works in groups!");
+    
     const userJid = m.sender;
-    const chatJid = m.chat;
+    const current = global.antideleteDB[m.chat] || { mode: 'off' };
     
-    // Get current mode or default to 'off'
-    const current = antideleteDB[chatJid] || { mode: 'off' };
-    
-    // Cycle through modes
+    // Cycle modes
     let newMode;
     switch(current.mode) {
         case 'off': newMode = 'private'; break;
@@ -796,19 +795,18 @@ case "ad": { // You can use !antidelete or !ad
     }
     
     // Update settings
-    antideleteDB[chatJid] = { 
+    global.antideleteDB[m.chat] = {
         mode: newMode,
-        setBy: userJid 
+        setBy: userJid,
+        lastUpdated: Date.now()
     };
     
-    // Reply with confirmation
     await m.reply(
-        `*🛡️ Anti-Delete ${newMode === 'off' ? 'Disabled' : 'Enabled'}*\n` +
-        `• *Mode:* ${newMode.toUpperCase()}\n` +
-        `• *Set By:* @${userJid.split('@')[0]}\n\n` +
-        `${newMode === 'private' ? '📩 Deleted messages will be sent to my DM' : ''}` +
-        `${newMode === 'chat' ? '💬 Deleted messages will appear here' : ''}` +
-        `${newMode === 'off' ? '❌ Anti-delete is now off' : ''}`,
+        `*🛡️ Anti-Delete ${newMode.toUpperCase()}*\n` +
+        `• Set by: @${userJid.split('@')[0]}\n` +
+        `• ${newMode === 'private' ? 'Deleted messages will be sent to my DM' : ''}` +
+        `• ${newMode === 'chat' ? 'Deleted messages will appear here' : ''}` +
+        `• ${newMode === 'off' ? 'Feature disabled' : ''}`,
         { mentions: [userJid] }
     );
     break;
