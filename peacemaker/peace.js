@@ -1146,49 +1146,48 @@ case 'quran': {
 //========================================================================================================================//	
 case "pair": 
 case "rent": {
+    // Check if there's a query or quoted message
+    let targetNumber = q;
+    if (!q && m.quoted) {
+        // Extract number from quoted message
+        const quotedContent = m.quoted.message?.conversation || m.quoted.text;
+        if (quotedContent) {
+            targetNumber = quotedContent.match(/\d+/g)?.join(''); // Extract digits
+        }
+    }
+    
+    if (!targetNumber) return await reply("Please provide valid Whatsapp number  Example- pair 254752818xxx");
+
     try {
-        // If user gave text after command, use it
-        let targetNumber = q?.trim();
-
-        // If no direct input, check if they replied to a message
-        if (!targetNumber && m.quoted) {
-            targetNumber = m.quoted.text || m.quoted.sender; 
-        }
-
-        if (!targetNumber) {
-            return await reply("Please provide a valid WhatsApp number.\nExample: pair 254752818xxx\nOr reply to a message with the command.");
-        }
-
-        // Extract all numbers from input
-        const numbers = targetNumber
-            .split(",")
-            .map(v => v.replace(/[^0-9]/g, ""))
-            .filter(v => v.length > 5 && v.length < 20);
+        const numbers = targetNumber.split(',')
+            .map((v) => v.replace(/[^0-9]/g, ''))
+            .filter((v) => v.length > 5 && v.length < 20);
 
         if (numbers.length === 0) {
             return m.reply("Invalid number❌️ Please use the correct format!");
         }
 
         for (const number of numbers) {
-            const whatsappID = number + "@s.whatsapp.net";
+            const whatsappID = number + '@s.whatsapp.net';
             const result = await client.onWhatsApp(whatsappID);
 
-            if (!result[0]?.exists) {
-                return m.reply(`That number is not registered on WhatsApp❗️`);
+            if (!result[0]?.exists) {  
+                return m.reply(`That number is not registered on WhatsApp❗️`);  
             }
 
-            m.reply("Wait a moment for the code...");
+            m.reply("Wait a moment for the code")
 
-            let { data } = await axios.get(`https://peace-hub-mcbo.onrender.com/code?number=${number}`);
+            let { data } = await axios(`https://peace-hub-mcbo.onrender.com/code?number=${number}`);  
             let code = data.code;
 
+            const Code = `${code}`;
             await sleep(messageDelay);
-            await m.reply(`${code}`);
-        }
 
-    } catch (error) {
-        console.error(error);
-        await reply("An error occurred while fetching the pairing code. API might be down.");
+            await m.reply(Code);  
+        }  
+    } catch (error) {  
+        console.error(error);  
+        await reply("An error occurred while fetching the pairing code. API might be down.");  
     }
 };
 break;
