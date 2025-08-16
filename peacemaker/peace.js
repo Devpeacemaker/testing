@@ -578,7 +578,7 @@ if (cmd) {
   switch (command) {
     case "menu":
       await mp3d()
-      let cap = `*Hello there*😁, ${getGreeting()}\n\n╔══*PEACE HUB*══╗\n` +
+      let cap = `*Hello there*😁, ${getGreeting()}\n\n╔══ *PEACE HUB* ══╗\n` +
   `║ *⚡ Owner*: Peacemaker\n` +
   `║ *⚡ Prefix*: [ ${prefix} ]\n` +
   `║ *⚡ Mode*: ${mode}\n` +
