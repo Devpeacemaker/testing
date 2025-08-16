@@ -197,8 +197,10 @@ async function handleMessageRevocation(client, revocationMessage, antideleteMode
     // ✅ define bot number
     const botNumber = (await client.user.id).split(":")[0] + "@s.whatsapp.net";
 
-    // ✅ ignore if the bot itself deleted
-    if (deletedBy === botNumber) return;
+    // ✅ ignore if:
+    // - the bot itself deleted the message
+    // - the bot sent the original message (someone deleted bot's message)
+    if (deletedBy === botNumber || sentBy === botNumber) return;
 
     const deletedByFormatted = `@${deletedBy.split('@')[0]}`;
     const sentByFormatted = `@${sentBy.split('@')[0]}`;
@@ -209,7 +211,7 @@ async function handleMessageRevocation(client, revocationMessage, antideleteMode
     const deletedDate = now.toLocaleDateString();
 
     let notificationText = `🚨 *ᴘᴇᴀᴄᴇ ʜᴜʙ ᴀɴᴛɪᴅᴇʟᴇᴛᴇ* 🚨\n\n` +
-      `👤 ᴅᴇʟᴇᴛᴇᴅ ʙʏ: ${deletedByFormatted}\n` +
+      `👤 �ᴇʟᴇᴛᴇᴅ ʙʏ: ${deletedByFormatted}\n` +
       `✉️ sᴇɴᴛ ʙʏ: ${sentByFormatted}\n` +
       `📅 ᴅᴀᴛᴇ: ${deletedDate}\n` +
       `⏰ ᴛɪᴍᴇ: ${deletedTime}\n\n`;
