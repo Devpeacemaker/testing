@@ -578,17 +578,16 @@ if (cmd) {
   switch (command) {
     case "menu":
       await mp3d()
-      let cap = `*Hello there*😁, ${getGreeting()}\n\n╔═══════「 *PEACE HUB* 」═══════╗\n` +
-  `║ *⚡ Owner*: PEACEMAKER\n` +
+      let cap = `*Hello there*😁, ${getGreeting()}\n\n╔══*PEACE HUB*══╗\n` +
+  `║ *⚡ Owner*: Peacemaker\n` +
   `║ *⚡ Prefix*: [ ${prefix} ]\n` +
   `║ *⚡ Mode*: ${mode}\n` +
-  `║ *⚡ Platform*: ${process.env.HEROKU_APP_NAME ? 'Heroku' : process.env.PANEL_URL ? 'Panel' : 'Local'}\n` +
+  `║ *⚡ Platform*: ${process.env.NODE_ENV === 'production' ? 'Heroku' : 'Local'}\n` +
   `║ *⚡ Commands*: ${totalcmds()}\n` +
   `║ *⚡ Speed*: ${Rspeed.toFixed(4)} ms\n` +
   `║ *⚡ Time*: ${getCurrentTimeInNairobi()}\n` +
   `║ *⚡ RAM*: ${ram()}\n` +   
-  `║\n` +
-  `╠══════「 *DOWNLOAD* 」══════╣\n` +
+  `╠════「 *DOWNLOAD* 」═╣\n` +
   `║ • Video\n` +
   `║ • Video2\n` +
   `║ • Play\n` +
@@ -606,8 +605,7 @@ if (cmd) {
   `║ • Yts\n` +
   `║ • Ytmp3\n` +
   `║ • Ytmp4\n` +
-  `║\n` +
-  `╠═══════「 *CONVERT* 」═══════╣\n` +
+  `╠════「 *CONVERT* 」═╣\n` +
   `║ • Sticker\n` +
   `║ • Smeme\n` +
   `║ • Photo\n` +
@@ -620,8 +618,7 @@ if (cmd) {
   `║ • Take\n` +
   `║ • Tweet\n` +
   `║ • Quotely\n` +
-  `║\n` +
-  `╠══════「 *SETTINGS* 」══════╣\n` +
+  `╠════「 *SETTINGS* 」═╣\n` +
   `║ • Antidelete\n` +
   `║ • Antiedit\n` +
   `║ • Anticall\n` +
@@ -639,16 +636,14 @@ if (cmd) {
   `║ • Prefix\n` +
   `║ • Welcomegoodbye\n` +
   `║ • Wapresence\n` +
-  `║\n` +
-  `╠══════「 *FOOTBALL* 」══════╣\n` +
+  `╠════「 *FOOTBALL* 」═╣\n` +
   `║ • Epl\n` +
   `║ • Laliga\n` +
   `║ • Serie-A\n` +
   `║ • Bundesliga\n` +
   `║ • Ligue-1\n` +
   `║ • Fixtures\n` +
-  `║\n` +
-  `╠════════「 *AI* 」════════╣\n` +
+  `╠════「 *AI* 」═╣\n` +
   `║ • Ai\n` +
   `║ • Ai2\n` +
   `║ • Vision\n` +
@@ -660,8 +655,7 @@ if (cmd) {
   `║ • Gpt2\n` +
   `║ • Gpt3\n` +
   `║ • Gpt4\n` +
-  `║\n` +
-  `╠═══════「 *GROUP* 」═══════╣\n` +
+  `╠════「 *GROUP* 」═╣\n` +
   `║ • Approve\n` +
   `║ • Reject\n` +
   `║ • Promote\n` +
@@ -689,8 +683,7 @@ if (cmd) {
   `║ • Revoke\n` +
   `║ • Mute\n` +
   `║ • Unmute\n` +
-  `║\n` +
-  `╠══════「 *CODING* 」══════╣\n` +
+  `╠════「 *CODING* 」═╣\n` +
   `║ • Carbon\n` +
   `║ • Compile-C\n` +
   `║ • Compile-C++\n` +
@@ -699,8 +692,7 @@ if (cmd) {
   `║ • Inspect\n` +
   `║ • Encrypte\n` +
   `║ • Eval\n` +
-  `║\n` +
-  `╠══════「 *GENERAL* 」══════╣\n` +
+  `╠════「 *GENERAL* 」═╣\n` +
   `║ • Owner\n` +
   `║ • Script\n` +
   `║ • Menu\n` +
@@ -716,8 +708,7 @@ if (cmd) {
   `║ • Dlt\n` +
   `║ • Mail\n` +
   `║ • Inbox\n` +
-  `║\n` +
-  `╠═══════「 *OWNER* 」═══════╣\n` +
+  `╠════「 *OWNER* 」═╣\n` +
   `║ • Restart\n` +
   `║ • Admin\n` +
   `║ • Cast\n` +
@@ -736,8 +727,7 @@ if (cmd) {
   `║ • Kill2\n` +
   `║ • Save\n` +
   `║ • Blocklist\n` +
-  `║\n` +
-  `╠════════「 *LOGO* 」════════╣\n` +
+  `╠════「 *LOGO* 」═╣\n` +
   `║ • Hacker\n` +
   `║ • Hacker2\n` +
   `║ • Graffiti\n` +
@@ -751,8 +741,7 @@ if (cmd) {
   `║ • Leaves\n` +
   `║ • 1917\n` +
   `║ • Typography\n` +
-  `║\n` +
-  `╠════「 *TEXT MAKER* 」════╣\n` +
+  `╠════「 *TEXT MAKER* 」═╣\n` +
   `║ • Purple\n` +
   `║ • Neon\n` +
   `║ • Noel\n` +
@@ -766,8 +755,7 @@ if (cmd) {
   `║ • Matrix\n` +
   `║ • Silver\n` +
   `║ • Light\n` +
-  `║\n` +
-  `╠════「 *UTILITIES* 」════╣\n` +
+  `╠════「 *UTILITIES* 」═╣\n` +
   `║ • Weather\n` +
   `║ • Github\n` +
   `║ • Gitclone\n` +
@@ -776,8 +764,7 @@ if (cmd) {
   `║ • Tts\n` +
   `║ • Trt\n` +
   `║ • Calc\n` +
-  `║\n` +
-  `╠══════「 *RANDOM* 」══════╣\n` +
+  `╠════「 *RANDOM* 」═╣\n` +
   `║ • Fact\n` +
   `║ • Funfact\n` +
   `║ • Catfact\n` +
@@ -790,8 +777,7 @@ if (cmd) {
   `║ • Animegirl\n` +
   `║ • Quotes\n` +
   `║ • Pickupline\n` +
-  `║\n` +
-  `╠═══════「 *OTHER* 」═══════╣\n` +
+  `╠════「 *OTHER* 」═╣\n` +
   `║ • Bible\n` +
   `║ • Quran\n` +
   `║ • Pair\n` +
@@ -801,8 +787,7 @@ if (cmd) {
   `║ • Url\n` +
   `║ • Image\n` +
   `║ • System\n` +
-  `║\n` +
-  `╚══════「 *PEACEMAKER* 」══════╝`;
+  `╚════「 *PEACE HUB* 」═╝`;
   
 if (menu === 'VIDEO') {
 
