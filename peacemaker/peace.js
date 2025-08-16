@@ -181,19 +181,28 @@ async function handleMessageRevocation(client, revocationMessage, antideleteMode
     const remoteJid = revocationMessage.key.remoteJid;
     const messageId = revocationMessage.message.protocolMessage.key.id;
 
+    // load original deleted message
     const chatData = loadChatData(remoteJid, messageId);
     const originalMessage = chatData[0];
     if (!originalMessage) return;
 
+    // detect who deleted and who sent originally
     const deletedBy = revocationMessage.participant || revocationMessage.key.participant || revocationMessage.key.remoteJid;
     const sentBy = originalMessage.key.participant || originalMessage.key.remoteJid;
-    if (!deletedBy || deletedBy.includes(botNumber)) return;
+
+    // ✅ define bot number
+    const botNumber = (await client.user.id).split(":")[0] + "@s.whatsapp.net";
+
+    // ✅ ignore if the bot itself deleted
+    if (deletedBy === botNumber) return;
 
     const deletedByFormatted = `@${deletedBy.split('@')[0]}`;
     const sentByFormatted = `@${sentBy.split('@')[0]}`;
+
+    // ✅ fetch *local time* (bot device timezone)
     const now = new Date();
-    const deletedTime = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-    const deletedDate = now.toLocaleDateString("en-GB");
+    const deletedTime = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const deletedDate = now.toLocaleDateString();
 
     let notificationText = `🚨 *ᴘᴇᴀᴄᴇ ʜᴜʙ ᴀɴᴛɪᴅᴇʟᴇᴛᴇ* 🚨\n\n` +
       `👤 ᴅᴇʟᴇᴛᴇᴅ ʙʏ: ${deletedByFormatted}\n` +
@@ -201,7 +210,7 @@ async function handleMessageRevocation(client, revocationMessage, antideleteMode
       `📅 ᴅᴀᴛᴇ: ${deletedDate}\n` +
       `⏰ ᴛɪᴍᴇ: ${deletedTime}\n\n`;
 
-    // Where to send recovered message
+    // where to send recovered message
     let targetJid;
     if (antideleteMode === "private") {
       targetJid = owner[0].replace(/[^0-9]/g, '') + "@s.whatsapp.net";
@@ -209,7 +218,7 @@ async function handleMessageRevocation(client, revocationMessage, antideleteMode
       targetJid = remoteJid;
     } else return;
 
-    // --- Handle message types and show content ---
+    // --- Handle message types and show exact content ---
     if (originalMessage.message?.conversation) {
       const messageText = originalMessage.message.conversation;
       notificationText += `📝 *Deleted Message:*\n${messageText}`;
@@ -240,9 +249,7 @@ async function handleMessageRevocation(client, revocationMessage, antideleteMode
     }
     else if (originalMessage.message?.stickerMessage) {
       const buffer = await client.downloadMediaMessage(originalMessage);
-      await client.sendMessage(targetJid, { 
-        sticker: buffer 
-      });
+      await client.sendMessage(targetJid, { sticker: buffer });
       await client.sendMessage(targetJid, { 
         text: `${notificationText}\n🔖 *Deleted Sticker*`, 
         mentions: [deletedBy, sentBy] 
