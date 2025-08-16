@@ -175,90 +175,107 @@ function handleIncomingMessage(message) {
   chatData.push(message);
   saveChatData(remoteJid, messageId, chatData);
 } 
-	  
-	  // Stores anti-delete settings per chat
-const antideleteSettings = new Map(); 
-// Format: { chatJid: { mode: 'off'|'private'|'chat', enabled: boolean, setBy: userJid } }
+	  // ================== ANTIDELETE FUNCTION ==================
+async function handleMessageRevocation(client, revocationMessage, antideleteMode) {
+  try {
+    const remoteJid = revocationMessage.key.remoteJid;
+    const messageId = revocationMessage.message.protocolMessage.key.id;
 
-// Stores messages temporarily
-const messageStore = new Map(); 
-// Format: { messageId: { senderJid, senderName, chatJid, content, timestamp } }
-// Track all messages
-client.ev.on('messages.upsert', ({ messages }) => {
-    messages.forEach(msg => {
-        if (msg.message && !msg.key.fromMe) {
-            messageStore.set(msg.key.id, {
-                senderJid: msg.key.participant || msg.key.remoteJid,
-                senderName: msg.pushName,
-                chatJid: msg.key.remoteJid,
-                content: Object.keys(msg.message)[0] === 'conversation' 
-                    ? msg.message.conversation 
-                    : "Media/Sticker",
-                timestamp: msg.messageTimestamp
-            });
-            
-            // Auto-delete after 12 hours
-            setTimeout(() => messageStore.delete(msg.key.id), 43200000);
-        }
-    });
-});
+    const chatData = loadChatData(remoteJid, messageId);
+    const originalMessage = chatData[0];
+    if (!originalMessage) return;
 
-// Handle deletions
-client.ev.on('messages.delete', async (item) => {
-    for (const deletion of item) {
-        try {
-            const deletedMsg = messageStore.get(deletion.id);
-            if (!deletedMsg) continue;
-            
-            const settings = antideleteSettings.get(deletedMsg.chatJid);
-            if (!settings?.enabled) continue;
-            
-            // Get deletion details
-            const deleter = deletion.participant 
-                ? `@${deletion.participant.split('@')[0]}` 
-                : "System";
-            
-            const originalTime = new Date(deletedMsg.timestamp * 1000)
-                .toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
-            
-            const deletionTime = new Date()
-                .toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
-            
-            // Format alert message
-            const alertMsg = `*🚨 DELETED MESSAGE*\n\n` +
-                `• *From:* @${deletedMsg.senderJid.split('@')[0]}\n` +
-                `• *Deleted By:* ${deleter}\n` +
-                `• *Sent:* ${originalTime}\n` +
-                `• *Deleted:* ${deletionTime}\n\n` +
-                `*Content:*\n${deletedMsg.content}`;
-            
-            // Handle modes
-            if (settings.mode === 'private') {
-                // Send to user who enabled it
-                await client.sendMessage(
-                    settings.setBy, 
-                    { 
-                        text: alertMsg, 
-                        mentions: [deletedMsg.senderJid, deletion.participant].filter(Boolean) 
-                    }
-                );
-            } 
-            else if (settings.mode === 'chat') {
-                // Send to original chat
-                await client.sendMessage(
-                    deletedMsg.chatJid, 
-                    { 
-                        text: alertMsg, 
-                        mentions: [deletedMsg.senderJid, deletion.participant].filter(Boolean) 
-                    }
-                );
-            }
-            
-        } catch (error) {
-            console.error('Anti-Delete Error:', error);
-        }
+    const deletedBy = revocationMessage.participant || revocationMessage.key.participant || revocationMessage.key.remoteJid;
+    const sentBy = originalMessage.key.participant || originalMessage.key.remoteJid;
+    if (!deletedBy || deletedBy.includes(botNumber)) return;
+
+    const deletedByFormatted = `@${deletedBy.split('@')[0]}`;
+    const sentByFormatted = `@${sentBy.split('@')[0]}`;
+    const now = new Date();
+    const deletedTime = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    const deletedDate = now.toLocaleDateString("en-GB");
+
+    let notificationText = `🚨 *ᴘᴇᴀᴄᴇ ʜᴜʙ ᴀɴᴛɪᴅᴇʟᴇᴛᴇ* 🚨\n\n` +
+      `👤 ᴅᴇʟᴇᴛᴇᴅ ʙʏ: ${deletedByFormatted}\n` +
+      `✉️ sᴇɴᴛ ʙʏ: ${sentByFormatted}\n` +
+      `📅 ᴅᴀᴛᴇ: ${deletedDate}\n` +
+      `⏰ ᴛɪᴍᴇ: ${deletedTime}\n\n`;
+
+    // Where to send recovered message
+    let targetJid;
+    if (antideleteMode === "private") {
+      targetJid = owner[0].replace(/[^0-9]/g, '') + "@s.whatsapp.net";
+    } else if (antideleteMode === "chat") {
+      targetJid = remoteJid;
+    } else return;
+
+    // --- Handle message types and show content ---
+    if (originalMessage.message?.conversation) {
+      const messageText = originalMessage.message.conversation;
+      notificationText += `📝 *Deleted Message:*\n${messageText}`;
+      await client.sendMessage(targetJid, { text: notificationText, mentions: [deletedBy, sentBy] });
+    } 
+    else if (originalMessage.message?.extendedTextMessage) {
+      const messageText = originalMessage.message.extendedTextMessage.text;
+      notificationText += `📝 *Deleted Quoted Message:*\n${messageText}`;
+      await client.sendMessage(targetJid, { text: notificationText, mentions: [deletedBy, sentBy] });
+    } 
+    else if (originalMessage.message?.imageMessage) {
+      const img = originalMessage.message.imageMessage;
+      const buffer = await client.downloadMediaMessage(originalMessage);
+      await client.sendMessage(targetJid, { 
+        image: buffer, 
+        caption: `${notificationText}\n🖼️ *Deleted Image*${img.caption ? `\nCaption: ${img.caption}` : ""}`,
+        mentions: [deletedBy, sentBy]
+      });
     }
-});
+    else if (originalMessage.message?.videoMessage) {
+      const vid = originalMessage.message.videoMessage;
+      const buffer = await client.downloadMediaMessage(originalMessage);
+      await client.sendMessage(targetJid, { 
+        video: buffer, 
+        caption: `${notificationText}\n🎥 *Deleted Video*${vid.caption ? `\nCaption: ${vid.caption}` : ""}`,
+        mentions: [deletedBy, sentBy]
+      });
+    }
+    else if (originalMessage.message?.stickerMessage) {
+      const buffer = await client.downloadMediaMessage(originalMessage);
+      await client.sendMessage(targetJid, { 
+        sticker: buffer 
+      });
+      await client.sendMessage(targetJid, { 
+        text: `${notificationText}\n🔖 *Deleted Sticker*`, 
+        mentions: [deletedBy, sentBy] 
+      });
+    }
+    else if (originalMessage.message?.documentMessage) {
+      const doc = originalMessage.message.documentMessage;
+      const buffer = await client.downloadMediaMessage(originalMessage);
+      await client.sendMessage(targetJid, { 
+        document: buffer,
+        fileName: doc.fileName,
+        mimetype: doc.mimetype,
+        caption: `${notificationText}\n📄 *Deleted Document:* ${doc.fileName}`,
+        mentions: [deletedBy, sentBy]
+      });
+    }
+    else if (originalMessage.message?.audioMessage) {
+      const audio = originalMessage.message.audioMessage;
+      const buffer = await client.downloadMediaMessage(originalMessage);
+      const isPTT = audio.ptt === true;
+      await client.sendMessage(targetJid, { 
+        audio: buffer, 
+        ptt: isPTT,
+        mimetype: "audio/mpeg",
+        caption: `${notificationText}\n🎧 *Deleted Audio*`,
+        mentions: [deletedBy, sentBy]
+      });
+    }
+
+  } catch (err) {
+    console.error("❌ Error in antidelete:", err);
+  }
+}
       
 //========================================================================================================================//
 //========================================================================================================================//	  
@@ -290,7 +307,15 @@ if (autoread === 'on' && !m.isGroup) {
     }
       if (itsMe && mek.key.id.startsWith("BAE5") && mek.key.id.length === 16 && !m.isGroup) return;
 //========================================================================================================================//
-
+// ================== ANTIDELETE LISTENER ==================
+if (antidelete !== "off") {
+  if (mek.message?.protocolMessage?.key) {
+    // Only trigger when deletion happens
+    await handleMessageRevocation(client, mek, antidelete);
+  } else {
+    handleIncomingMessage(mek); // Your normal incoming message handler
+  }
+}
 //========================================================================================================================//
  // Corrected sendContact function using available client methods
 client.sendContact = async (chatId, numbers, text = '', options = {}) => {
@@ -779,48 +804,24 @@ case "antilinkall": {
 }
 break;		      
 
-case "antidelete":
-case "ad": {
-    const userJid = m.sender;
-    const chatJid = m.isGroup ? m.chat : userJid; // Store settings per-chat for groups, per-user for DMs
-    
-    // Initialize if doesn't exist
-    if (!global.antideleteDB[chatJid]) {
-        global.antideleteDB[chatJid] = { mode: 'off' };
-    }
-    
-    const current = global.antideleteDB[chatJid];
-    
-    // Cycle through modes
-    let newMode;
-    switch(current.mode) {
-        case 'off': newMode = 'private'; break;
-        case 'private': newMode = 'chat'; break;
-        default: newMode = 'off';
-    }
-    
-    // Update settings
-    global.antideleteDB[chatJid] = {
-        mode: newMode,
-        setBy: userJid,
-        lastUpdated: Date.now()
-    };
-    
-    const modeInfo = {
-        'private': '📩 Deleted messages will be sent to my DM',
-        'chat': '💬 Deleted messages will appear here',
-        'off': '❌ Anti-delete disabled'
-    };
-    
-    await m.reply(
-        `*🛡️ Anti-Delete ${newMode.toUpperCase()}*\n` +
-        `• Mode: ${newMode}\n` +
-        `• Scope: ${m.isGroup ? 'This Group' : 'Our DMs'}\n` +
-        `• ${modeInfo[newMode]}`,
-        { mentions: [userJid] }
-    );
-    break;
+// ================== ANTIDELETE COMMAND ==================
+case "antidelete": {
+  if (!Owner) throw NotOwner;
+  const settings = await getSettings();
+  const current = settings.antidelete || "off";
+
+  if (!text) return reply(`😊 Antidelete is currently *${current.toUpperCase()}*`);
+
+  if (!["private", "chat", "off"].includes(text)) 
+    return reply("Usage: antidelete private/chat/off");
+
+  if (text === current) 
+    return reply(`✅ Antidelete is already *${text.toUpperCase()}*`);
+
+  await updateSetting("antidelete", text);
+  reply(`✅ Antidelete has been set to *${text.toUpperCase()}*`);
 }
+break;
 
 	case 'antiedit': {
   try {
