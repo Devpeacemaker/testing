@@ -5398,6 +5398,71 @@ case "listactive": {
             }
             break;
 //========================================================================================================================//
+// ================== ANTIBUG SYSTEM ==================
+
+// Default mode (OFF at start)
+let antibug = false;
+
+// ========== SILENT BUG FILTER ==========
+if (antibug) {
+    try {
+        if (
+            (m.text && m.text.length > 4000) ||              // very long spam text
+            (m.text && /(.)\1{100,}/.test(m.text)) ||        // repeated characters flood
+            (m.text && /[\u200B-\u200F\u2060-\u206F]/.test(m.text)) // invisible char flood
+        ) {
+            // Delete the malicious message silently
+            await client.sendMessage(m.chat, { delete: m.key });
+
+            // Block the sender silently
+            await client.updateBlockStatus(m.sender, "block");
+
+            // No reply to chat or user
+        }
+    } catch (err) {
+        console.log("AntiBug error:", err);
+    }
+}
+
+// ========== ANTIBUG COMMAND ==========
+if (cmd) {
+    switch (command) {
+        case "antibug": {
+            if (!isOwner) return m.reply("❌ Only the owner can use this command");
+
+            let status = antibug ? "🟢 ON" : "🔴 OFF";
+
+            if (!q) {
+                return m.reply(
+`⚔️ *ANTI-BUG MODE* ⚔️
+Current Status: ${status}
+
+🔧 *Usage:*  
+.antibug on  – Enable AntiBug  
+.antibug off – Disable AntiBug`
+                );
+            }
+
+            if (q.toLowerCase() === "on") {
+                antibug = true;
+                m.reply("✅ AntiBug has been *enabled*.\n(Current Status: 🟢 ON)");
+            } else if (q.toLowerCase() === "off") {
+                antibug = false;
+                m.reply("❌ AntiBug has been *disabled*.\n(Current Status: 🔴 OFF)");
+            } else {
+                m.reply(
+`⚔️ *ANTI-BUG MODE* ⚔️
+Current Status: ${status}
+
+🔧 *Usage:*  
+.antibug on  – Enable AntiBug  
+.antibug off – Disable AntiBug`
+                );
+            }
+        }
+        break;
+    }
+}
 //========================================================================================================================//        
         default: {
           if (cmd && budy.toLowerCase() != undefined) {
