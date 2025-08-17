@@ -181,40 +181,36 @@ async function handleMessageRevocation(client, revocationMessage, antideleteMode
     const remoteJid = revocationMessage.key.remoteJid;
     const messageId = revocationMessage.message.protocolMessage.key.id;
 
-    // Load original deleted message
-    const originalMessage = await store.loadMessage(remoteJid, messageId);
+    // load original deleted message
+    const chatData = loadChatData(remoteJid, messageId);
+    const originalMessage = chatData[0];
     if (!originalMessage) return;
 
-    // Detect who deleted
-    const deletedBy = revocationMessage.participant 
-      ? revocationMessage.participant                // Deleter in group
-      : revocationMessage.key.remoteJid;            // Deleter in private
+    // ✅ detect who deleted
+    const deletedBy = revocationMessage.participant
+      ? revocationMessage.participant                // deleter in group
+      : revocationMessage.key.remoteJid;             // deleter in private
 
-    // Detect who originally sent
+    // ✅ detect who originally sent
     const sentBy = originalMessage.key.participant || originalMessage.key.remoteJid;
 
-    // Get bot's JID
-    const botJid = client.user.id.split(":")[0] + "@s.whatsapp.net";
+    // ✅ get bot's JID
+    const botJid = (await client.user.id).split(":")[0] + "@s.whatsapp.net";
 
-    // Ignore if the bot itself deleted or sent the message
-    if (deletedBy === botJid || sentBy === botJid) {
-      console.log("Ignoring bot's own message activity");
-      return;
-    }
+    // ✅ ignore if the bot itself deleted the message
+    if (deletedBy === botJid) return;
+
+    // ✅ ignore if the bot itself sent the message (even if deleted by others)
+    if (sentBy === botJid) return;
 
     const deletedByFormatted = `@${deletedBy.split('@')[0]}`;
     const sentByFormatted = `@${sentBy.split('@')[0]}`;
 
-    // Get correct local time (adjusted for timezone)
+    // ✅ fix timezone to Africa/Nairobi (UTC+3)
     const now = new Date();
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const deletedTime = now.toLocaleTimeString([], { 
-      hour: "2-digit", 
-      minute: "2-digit", 
-      second: "2-digit",
-      timeZone 
-    });
-    const deletedDate = now.toLocaleDateString([], { timeZone });
+    const localNow = new Date(now.getTime() + (3 * 60 * 60 * 1000)); // add +3hrs
+    const deletedTime = localNow.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const deletedDate = localNow.toLocaleDateString();
 
     let notificationText = `🚨 *ᴘᴇᴀᴄᴇ ʜᴜʙ ᴀɴᴛɪᴅᴇʟᴇᴛᴇ* 🚨\n\n` +
       `👤 ᴅᴇʟᴇᴛᴇᴅ ʙʏ: ${deletedByFormatted}\n` +
@@ -222,105 +218,83 @@ async function handleMessageRevocation(client, revocationMessage, antideleteMode
       `📅 ᴅᴀᴛᴇ: ${deletedDate}\n` +
       `⏰ ᴛɪᴍᴇ: ${deletedTime}\n\n`;
 
-    // Where to send recovered message
+    // where to send recovered message
     let targetJid;
     if (antideleteMode === "private") {
-      targetJid = client.user.id; // Send to bot's own chat
+      targetJid = owner[0].replace(/[^0-9]/g, '') + "@s.whatsapp.net";
     } else if (antideleteMode === "chat") {
       targetJid = remoteJid;
     } else return;
 
-    // Handle all message types
-    const msgType = Object.keys(originalMessage.message)[0];
-    
-    switch(msgType) {
-      case 'conversation':
-        notificationText += `📝 *Deleted Text:*\n${originalMessage.message.conversation}`;
-        await client.sendMessage(targetJid, { 
-          text: notificationText, 
-          mentions: [deletedBy, sentBy] 
-        });
-        break;
-        
-      case 'extendedTextMessage':
-        const extendedMsg = originalMessage.message.extendedTextMessage;
-        notificationText += `📝 *Deleted Quoted Text:*\n${extendedMsg.text}`;
-        await client.sendMessage(targetJid, { 
-          text: notificationText, 
-          mentions: [deletedBy, sentBy] 
-        });
-        break;
-        
-      case 'imageMessage':
-        const imgMsg = originalMessage.message.imageMessage;
-        const imgBuffer = await client.downloadMediaMessage(originalMessage);
-        await client.sendMessage(targetJid, {
-          image: imgBuffer,
-          caption: `${notificationText}🖼️ *Deleted Image*${imgMsg.caption ? `\nCaption: ${imgMsg.caption}` : ""}`,
-          mentions: [deletedBy, sentBy]
-        });
-        break;
-        
-      case 'videoMessage':
-        const vidMsg = originalMessage.message.videoMessage;
-        const vidBuffer = await client.downloadMediaMessage(originalMessage);
-        await client.sendMessage(targetJid, {
-          video: vidBuffer,
-          caption: `${notificationText}🎥 *Deleted Video*${vidMsg.caption ? `\nCaption: ${vidMsg.caption}` : ""}`,
-          mentions: [deletedBy, sentBy]
-        });
-        break;
-        
-      case 'stickerMessage':
-        const stickerBuffer = await client.downloadMediaMessage(originalMessage);
-        await client.sendMessage(targetJid, { 
-          sticker: stickerBuffer 
-        });
-        await client.sendMessage(targetJid, {
-          text: `${notificationText}🔖 *Deleted Sticker*`,
-          mentions: [deletedBy, sentBy]
-        });
-        break;
-        
-      case 'documentMessage':
-        const docMsg = originalMessage.message.documentMessage;
-        const docBuffer = await client.downloadMediaMessage(originalMessage);
-        await client.sendMessage(targetJid, {
-          document: docBuffer,
-          fileName: docMsg.fileName || "document",
-          mimetype: docMsg.mimetype,
-          caption: `${notificationText}📄 *Deleted Document:* ${docMsg.fileName || "file"}`,
-          mentions: [deletedBy, sentBy]
-        });
-        break;
-        
-      case 'audioMessage':
-        const audioMsg = originalMessage.message.audioMessage;
-        const audioBuffer = await client.downloadMediaMessage(originalMessage);
-        await client.sendMessage(targetJid, {
-          audio: audioBuffer,
-          ptt: audioMsg.ptt,
-          mimetype: audioMsg.mimetype || "audio/mpeg",
-          caption: `${notificationText}🎧 *Deleted ${audioMsg.ptt ? "Voice Note" : "Audio"}*`,
-          mentions: [deletedBy, sentBy]
-        });
-        break;
-        
-      case 'contactMessage':
-        const contact = originalMessage.message.contactMessage;
-        notificationText += `📇 *Deleted Contact:*\nName: ${contact.displayName}\nNumber: ${contact.vcard.split('waid=')[1].split(':')[0]}`;
-        await client.sendMessage(targetJid, { 
-          text: notificationText, 
-          mentions: [deletedBy, sentBy] 
-        });
-        break;
-        
-      default:
-        notificationText += `⚙️ *Deleted Message Type:* ${msgType.replace('Message', '')}`;
-        await client.sendMessage(targetJid, { 
-          text: notificationText, 
-          mentions: [deletedBy, sentBy] 
-        });
+    // --- Handle all possible message types ---
+    if (originalMessage.message?.conversation) {
+      await client.sendMessage(targetJid, { 
+        text: `${notificationText}📝 *Deleted Message:*\n${originalMessage.message.conversation}`, 
+        mentions: [deletedBy, sentBy] 
+      });
+    } 
+    else if (originalMessage.message?.extendedTextMessage) {
+      await client.sendMessage(targetJid, { 
+        text: `${notificationText}📝 *Deleted Quoted Message:*\n${originalMessage.message.extendedTextMessage.text}`, 
+        mentions: [deletedBy, sentBy] 
+      });
+    } 
+    else if (originalMessage.message?.imageMessage) {
+      const buffer = await client.downloadMediaMessage(originalMessage);
+      const caption = originalMessage.message.imageMessage.caption || "";
+      await client.sendMessage(targetJid, { 
+        image: buffer, 
+        caption: `${notificationText}🖼️ *Deleted Image*${caption ? `\nCaption: ${caption}` : ""}`, 
+        mentions: [deletedBy, sentBy] 
+      });
+    } 
+    else if (originalMessage.message?.videoMessage) {
+      const buffer = await client.downloadMediaMessage(originalMessage);
+      const caption = originalMessage.message.videoMessage.caption || "";
+      await client.sendMessage(targetJid, { 
+        video: buffer, 
+        caption: `${notificationText}🎥 *Deleted Video*${caption ? `\nCaption: ${caption}` : ""}`, 
+        mentions: [deletedBy, sentBy] 
+      });
+    } 
+    else if (originalMessage.message?.stickerMessage) {
+      const buffer = await client.downloadMediaMessage(originalMessage);
+      await client.sendMessage(targetJid, { sticker: buffer });
+      await client.sendMessage(targetJid, { 
+        text: `${notificationText}🔖 *Deleted Sticker*`, 
+        mentions: [deletedBy, sentBy] 
+      });
+    } 
+    else if (originalMessage.message?.documentMessage) {
+      const buffer = await client.downloadMediaMessage(originalMessage);
+      const doc = originalMessage.message.documentMessage;
+      await client.sendMessage(targetJid, { 
+        document: buffer, 
+        fileName: doc.fileName, 
+        mimetype: doc.mimetype, 
+        caption: `${notificationText}📄 *Deleted Document:* ${doc.fileName}`, 
+        mentions: [deletedBy, sentBy] 
+      });
+    } 
+    else if (originalMessage.message?.audioMessage) {
+      const buffer = await client.downloadMediaMessage(originalMessage);
+      const isPTT = originalMessage.message.audioMessage.ptt === true;
+      await client.sendMessage(targetJid, { 
+        audio: buffer, 
+        ptt: isPTT, 
+        mimetype: "audio/mpeg" 
+      }, { quoted: originalMessage });
+      await client.sendMessage(targetJid, { 
+        text: `${notificationText}🎧 *Deleted Audio*`, 
+        mentions: [deletedBy, sentBy] 
+      });
+    } 
+    else if (originalMessage.message?.call) {
+      // Voice/video call deleted
+      await client.sendMessage(targetJid, { 
+        text: `${notificationText}📞 *Deleted Call Log*`, 
+        mentions: [deletedBy, sentBy] 
+      });
     }
 
   } catch (err) {
