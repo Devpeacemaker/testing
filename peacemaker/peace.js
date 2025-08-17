@@ -829,23 +829,36 @@ case "antilinkall": {
 break;		      
 
 // ================== ANTIDELETE COMMAND ==================
-case "antidelete": {
-  if (!Owner) throw NotOwner;
-  const settings = await getSettings();
-  const current = settings.antidelete || "off";
+case 'antidelete': {
+  try {
+    const validModes = ['off', 'private', 'chat'];
+    const newMode = args[0]?.toLowerCase().trim();
 
-  if (!text) return reply(`😊 Antidelete is currently *${current.toUpperCase()}*`);
+    if (!newMode || !validModes.includes(newMode)) {
+      const currentMode = client.settings?.antidelete || 'private';
+      return m.reply(`🗑️ *Antidelete Settings*\n\n` +
+                    `Current: ${currentMode}\n` +
+                    `Usage: ${prefix}antidelete [off/private/chat]\n` +
+                    `Example: ${prefix}antidelete chat`);
+    }
 
-  if (!["private", "chat", "off"].includes(text)) 
-    return reply("Usage: antidelete private/chat/off");
+    const db = require('../Database/config');
+    const success = await db.updateSetting('antidelete', newMode);
 
-  if (text === current) 
-    return reply(`✅ Antidelete is already *${text.toUpperCase()}*`);
-
-  await updateSetting("antidelete", text);
-  reply(`✅ Antidelete has been set to *${text.toUpperCase()}*`);
+    if (success) {
+      // Refresh settings in memory
+      client.settings = await db.getSettings();
+      m.reply(`✅ Antidelete mode set to *${newMode}*`);
+      console.log(`[SETTINGS] Antidelete updated to ${newMode} by ${m.sender.split('@')[0]}`);
+    } else {
+      m.reply('❌ Failed to update. Check bot logs.');
+    }
+  } catch (err) {
+    console.error('[ANTIDELETE COMMAND ERROR]', err);
+    m.reply('❌ Error updating setting. Please try again.');
+  }
+  break;
 }
-break;
 
 	case 'antiedit': {
   try {
