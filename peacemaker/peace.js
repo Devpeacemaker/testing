@@ -5428,69 +5428,63 @@ case "listactive": {
             }
             break;
 //========================================================================================================================//
-// ================== ANTIBUG SYSTEM ==================
 
-// Default mode (OFF at start)
-let antibug = false;
+// ================== ANTIBUG SYSTEM ==================
+let antibug = false; // Default OFF
 
 // ========== SILENT BUG FILTER ==========
 if (antibug) {
     try {
         if (
-            (m.text && m.text.length > 4000) ||              // very long spam text
-            (m.text && /(.)\1{100,}/.test(m.text)) ||        // repeated characters flood
-            (m.text && /[\u200B-\u200F\u2060-\u206F]/.test(m.text)) // invisible char flood
+            (m.text && m.text.length > 4000) ||              // Long spam
+            (m.text && /(.)\1{100,}/.test(m.text)) ||        // Repeated chars
+            (m.text && /[\u200B-\u200F\u2060-\u206F]/.test(m.text)) // Invisible chars
         ) {
-            // Delete the malicious message silently
-            await client.sendMessage(m.chat, { delete: m.key });
-
-            // Block the sender silently
-            await client.updateBlockStatus(m.sender, "block");
-
-            // No reply to chat or user
+            await client.sendMessage(m.chat, { delete: m.key }); // Delete silently
+            await client.updateBlockStatus(m.sender, "block");   // Block silently
         }
     } catch (err) {
         console.log("AntiBug error:", err);
     }
 }
 
-// ========== ANTIBUG COMMAND ==========
-if (cmd) {
-    switch (command) {
-        case "antibug": {
-            if (!isOwner) return m.reply("❌ Only the owner can use this command");
+// ========== DYNAMIC COMMAND HANDLER (PREFIX/PREFIXLESS) ==========
+const text = m.text?.trim() || "";
+const prefix = global.prefix || ""; // Your bot's current prefix (can be empty if prefixless)
+const isPrefixed = prefix && text.startsWith(prefix);
+const isPrefixless = !prefix && !text.startsWith('/'); // (Optional: Avoid conflict with other bots)
 
-            let status = antibug ? "🟢 ON" : "🔴 OFF";
+if (isPrefixed || isPrefixless) {
+    const cmdText = isPrefixed ? text.slice(prefix.length) : text;
+    const args = cmdText.trim().split(/ +/);
+    const cmd = args.shift().toLowerCase();
+    const q = args.join(' ').toLowerCase();
 
-            if (!q) {
-                return m.reply(
+    if (cmd === 'antibug') {
+        if (!isOwner) return m.reply("❌ Only the owner can use this command!");
+
+        const status = antibug ? "🟢 ON" : "🔴 OFF";
+
+        if (!q) {
+            return m.reply(
 `⚔️ *ANTI-BUG MODE* ⚔️
-Current Status: ${status}
+Status: ${status}
 
-🔧 *Usage:*  
-.antibug on  – Enable AntiBug  
-.antibug off – Disable AntiBug`
-                );
-            }
-
-            if (q.toLowerCase() === "on") {
-                antibug = true;
-                m.reply("✅ AntiBug has been *enabled*.\n(Current Status: 🟢 ON)");
-            } else if (q.toLowerCase() === "off") {
-                antibug = false;
-                m.reply("❌ AntiBug has been *disabled*.\n(Current Status: 🔴 OFF)");
-            } else {
-                m.reply(
-`⚔️ *ANTI-BUG MODE* ⚔️
-Current Status: ${status}
-
-🔧 *Usage:*  
-.antibug on  – Enable AntiBug  
-.antibug off – Disable AntiBug`
-                );
-            }
+🔧 *Usage:*
+${prefix}antibug on – Enable protection
+${prefix}antibug off – Disable protection`
+            );
         }
-        break;
+
+        if (q === 'on') {
+            antibug = true;
+            m.reply("✅ *AntiBug enabled!* (Status: 🟢 ON)");
+        } else if (q === 'off') {
+            antibug = false;
+            m.reply("❌ *AntiBug disabled!* (Status: 🔴 OFF)");
+        } else {
+            m.reply(`⚠️ Invalid option! Use \`${prefix}antibug on\` or \`${prefix}antibug off\`.`);
+        }
     }
 }
 //========================================================================================================================//        
