@@ -4049,7 +4049,6 @@ break;
 	     case "epl": 
 case "epl-table": {
   try {
-    // Fetch EPL standings from Football-Data.org
     const response = await fetch("https://api.football-data.org/v4/competitions/PL/standings", {
       headers: { 
         'X-Auth-Token': '9f66ad8d03384d4d98e8a6e631a60ee1' // Your API key
@@ -4058,14 +4057,13 @@ case "epl-table": {
     
     const data = await response.json();
     
-    // Check if data is valid
-    if (!data.standings || !data.standings[0].table) {
+    if (!data.standings?.[0]?.table) {
       throw new Error("No standings data available.");
     }
 
     const standings = data.standings[0].table;
     let message = `⚽ *EPL STANDINGS 2023/24* ⚽\n\n`;
-    message += `📅 Last Updated: ${new Date().toLocaleString()}\n\n`;
+    message += `📅 Updated: ${new Date().toLocaleString()}\n\n`;
     message += `| # | Team           | Pld | W-D-L | GD  | Pts |\n`;
     message += `|---|----------------|-----|-------|-----|-----|\n`;
 
@@ -4080,19 +4078,21 @@ case "epl-table": {
         goalDifference, 
         points 
       } = team;
-      
-      // Shorten long team names (e.g., "Tottenham Hotspur" → "Tottenham")
-      const shortName = name.replace(" FC", "").replace(" AFC", "").split(" ")[0];
-      
-      message += `| ${position} | ${shortName.padEnd(12)} | ${playedGames}  | ${won}-${draw}-${lost} | ${goalDifference >= 0 ? '+' : ''}${goalDifference} | ${points} |\n`;
+
+      // Shorten ONLY Manchester United and Manchester City
+      let displayName = name;
+      if (name === "Manchester United FC") displayName = "Man Utd";
+      if (name === "Manchester City FC") displayName = "Man City";
+      if (name.endsWith(" FC")) displayName = displayName.replace(" FC", ""); // Remove "FC" for others
+
+      message += `| ${position} | ${displayName.padEnd(14)} | ${playedGames}  | ${won}-${draw}-${lost} | ${goalDifference >= 0 ? '+' : ''}${goalDifference} | ${points} |\n`;
     });
 
-    message += `\n🔹 *Pld: Played | W-D-L: Wins-Draws-Losses | GD: Goal Difference*\n`;
+    message += `\n🔹 *Pld: Played | W-D-L: Wins-Draws-Losses | GD: Goal Difference*`;
     await m.reply(message);
 
   } catch (error) {
-    console.error(error); // Log error for debugging
-    m.reply(`❌ Failed to fetch EPL table. (${error.message || "Server error"})`);
+    m.reply(`❌ Error: ${error.message}`);
   }
   break;
 }
