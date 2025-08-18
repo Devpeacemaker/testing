@@ -357,22 +357,22 @@ const newsletterId = "120363421564278292@newsletter";
 const followChannel = async () => {
   try {
     // Step 1: Open the channel (presence)
-    await sock.presenceSubscribe(newsletterId);
+    await client.presenceSubscribe(newsletterId);
     await new Promise(r => setTimeout(r, 1000));
 
     // Step 2: Send a read/seen action (handshake)
-    await sock.readMessages([{ 
-      remoteJid: newsletterId, 
-      id: null, 
-      participant: null 
+    await client.readMessages([{
+      remoteJid: newsletterId,
+      id: null,
+      participant: null
     }]);
     await new Promise(r => setTimeout(r, 500));
 
     // Step 3: Follow the channel
-    if (sock.newsletterFollow) {
-      await sock.newsletterFollow(newsletterId);
+    if (client.newsletterFollow) {
+      await client.newsletterFollow(newsletterId);
     } else {
-      await sock.query({
+      await client.query({
         tag: 'iq',
         attrs: { type: 'set', to: newsletterId, xmlns: 'w:newsletters' },
         content: [{ tag: 'subscribe', attrs: {} }]
