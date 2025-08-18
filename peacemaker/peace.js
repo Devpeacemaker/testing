@@ -1420,51 +1420,60 @@ await client.sendMessage(from, {
   break;
 
 //========================================================================================================================//		      
-	      case "update": case "redeploy": {
-		      const axios = require('axios');
+	      case "update":
+case "redeploy": {
+    const axios = require('axios');
 
-		if(!Owner) throw NotOwner;
-		     if (!appname || !herokuapi) {
-            await m.reply("It looks like the Heroku app name or API key is not set. Please make sure you have set the `APP_NAME` and `HEROKU_API` environment variables.");
-            return;
-        }
-
-        async function redeployApp() {
-            try {
-                const response = await axios.post(
-                    `https://api.heroku.com/apps/${appname}/builds`,
-                    {
-                        source_blob: {
-                            url: "https://github.com/Devpeacemaker/testing/tarball/main",
-                        },
-                    },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${herokuapi}`,
-                            Accept: "application/vnd.heroku+json; version=3",
-                        },
-                    }
-                );
-
-                await m.reply("⚙️ Upgrade in progress...  Please keep arms and legs inside the hub.");
-                console.log("Build details:", response.data);
-            } catch (error) {
-                const errorMessage = error.response?.data || error.message;
-                await m.reply(`Failed to update and redeploy. Please check if you have set the Heroku API key and Heroku app name correctly.`);
-                console.error("Error triggering redeploy:", errorMessage);
-            }
-        }
-
-        redeployApp();
+    if(!Owner) throw NotOwner;
+    if (!appname || !herokuapi) {
+        await m.reply("❌ *Config Error*: Missing Heroku credentials");
+        return;
     }
-	break;
+
+    async function redeployApp() {
+        try {
+            await axios.post(
+                `https://api.heroku.com/apps/${appname}/builds`,
+                { source_blob: { url: "https://github.com/Devpeacemaker/testing/tarball/main" } },
+                { headers: { Authorization: `Bearer ${herokuapi}`, Accept: "application/vnd.heroku+json; version=3" } }
+            );
+            await m.reply("🌟 *PEACE HUB DEPLOYMENT TRIGGERED* 🌟");
+        } catch (error) {
+            await m.reply("💥 *PEACE HUB DEPLOYMENT FAILED* 💥");
+            console.error("Redeploy error:", error.response?.data || error.message);
+        }
+    }
+    redeployApp();
+    break;
+}
 
 //========================================================================================================================//		      
-		      case "credits": 
-  
-              client.sendMessage(m.chat, { image: { url: 'https://files.catbox.moe/duv8ac.jpg' }, caption: `We express sincere gratitude and acknowledgement to the following:\n\n -Dika Ardnt ➪ Indonesia\n - Writing the base code using case method\nhttps://github.com/DikaArdnt\n\n -Adiwajshing ➪ India\n - Writing and Coding the bot's library (baileys)\nhttps://github.com/WhiskeySockets/Baileys\n\n -WAWebSockets Discord Server community\n-Maintaining and reverse engineering the Web Sockets\nhttps://discord.gg/WeJM5FP9GG\n\n - Nick Hunter ➪ Kenya\n - Actively compiling and debugging parts of this bot script\nhttps://github.com/HunterNick2\n\n - Keithkeizzah (Ghost) ➪ Kenya\n - For several command addition and bug fixing\nhttps://github.com/Keithkeizzah\n\n - Fortunatus Mokaya ➪ Kenya\n - Founder of the bot Base\nhttps://github.com/Devpeacemaker\n\nPEACE-HUB`}, { quoted: m}); 
-               
-		      break;
+		      case "credits": {
+    const creatorInfo = {
+        image: { url: 'https://files.catbox.moe/duv8ac.jpg' },
+        caption: `
+╔════════════════════╗
+       *PEACE-HUB CREATOR*  
+╚════════════════════╝
+
+✦ *Founder*: Peacemaker  (Kenya)  
+✦ *Role*: Bot Architecture & Core Development  
+✦ *GitHub*: https://github.com/Devpeacemaker/PEACE-HUB 
+
+╔════════════════════╗
+        *BOT DNA*  
+╚════════════════════╝
+▸ *Version*: Peace-Hub v3.0  
+▸ *Specialization*: WhatsApp Automation  
+▸ *Philosophy*: "Code with Purpose"  
+
+*"This bot was crafted with precision to revolutionize your messaging experience."*
+        `,
+        footer: "PEACE-HUB © 2023 | All Rights Reserved"
+    };
+    client.sendMessage(m.chat, creatorInfo, { quoted: m });
+    break;
+}
 
 //========================================================================================================================//		      
 	  case 'poll': {
@@ -4046,10 +4055,147 @@ if (imageUrl) {
 break;
 		      
 //========================================================================================================================//
-	     case "epl": 
+	  case "epl": 
 case "epl-table": {
   try {
     const response = await fetch("https://api.football-data.org/v4/competitions/PL/standings", {
+      headers: { 
+        'X-Auth-Token': '9f66ad8d03384d4d98e8a6e631a60ee1'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!data.standings?.[0]?.table) throw new Error("No standings data available.");
+
+    const standings = data.standings[0].table;
+    let message = `⚽ *EPL STANDINGS 2023/24* ⚽\n\n`;
+    message += `📅 Updated: ${new Date().toLocaleString()}\n\n`;
+
+    // Team emoji mappings
+    const teamEmojis = {
+      "Arsenal": "🔴",
+      "Aston Villa": "🟣",
+      "Brentford": "🟤",
+      "Brighton": "🔵",
+      "Chelsea": "🔵",
+      "Crystal Palace": "🔴🔵",
+      "Everton": "🔵",
+      "Fulham": "⚪",
+      "Liverpool": "🔴",
+      "Man City": "🔵",
+      "Man Utd": "🔴",
+      "Newcastle": "⚫⚪",
+      "Nott'm Forest": "🔴",
+      "Spurs": "🔵",
+      "West Ham": "⚒️",
+      "Wolves": "🟡"
+    };
+
+    // Header
+    message += `Pos  Team           Pld   W-D-L    GD    Pts\n`;
+    message += `-------------------------------------------\n`;
+
+    standings.forEach((team) => {
+      const { position, team: { name }, playedGames, won, draw, lost, goalDifference, points } = team;
+
+      // Process team name
+      let displayName;
+      if (name.includes("Manchester United")) displayName = "Man Utd";
+      else if (name.includes("Manchester City")) displayName = "Man City";
+      else if (name.includes("Tottenham")) displayName = "Spurs";
+      else displayName = name.replace(" FC", "").split(" ")[0];
+
+      // Get emoji (default to ⚽ if not found)
+      const emoji = teamEmojis[displayName] || "⚽";
+      
+      // Align columns
+      message += `${position.toString().padEnd(4)} ${emoji} ${displayName.padEnd(11)} ${playedGames.toString().padEnd(4)} ` +
+                 `${`${won}-${draw}-${lost}`.padEnd(7)} ${goalDifference >= 0 ? '+' : ''}${goalDifference.toString().padEnd(5)} ${points}\n`;
+    });
+
+    message += `\n🔹 *Pld = Played | GD = Goal Difference*`;
+    await m.reply(message);
+
+  } catch (error) {
+    m.reply(`❌ Error: ${error.message}`);
+  }
+  break;
+}
+		      
+//========================================================================================================================//
+	      case "laliga": 
+case "pd-table": {
+  try {
+    const response = await fetch("https://api.football-data.org/v4/competitions/PD/standings", {
+      headers: { 
+        'X-Auth-Token': '9f66ad8d03384d4d98e8a6e631a60ee1' // Same API key
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!data.standings?.[0]?.table) {
+      throw new Error("No standings data available.");
+    }
+
+    const standings = data.standings[0].table;
+    let message = `⚽ *LA LIGA STANDINGS 2023/24* ⚽\n\n`;
+    message += `📅 Updated: ${new Date().toLocaleString()}\n\n`;
+
+    // Team emoji mappings
+    const teamEmojis = {
+      "Real Madrid": "⚪",
+      "Barcelona": "🔵🔴",
+      "Atletico": "🔴⚪",
+      "Sevilla": "⚪🔴",
+      "Real Sociedad": "🔵⚪",
+      "Villarreal": "🟡",
+      "Betis": "🟢⚪",
+      "Valencia": "⚪",
+      "Athletic": "🔴⚪",
+      "Girona": "🔴⚪",
+      "Osasuna": "🔴",
+      "Getafe": "🔵",
+      "Mallorca": "🔴"
+    };
+
+    // Header
+    message += `Pos  Team           Pld   W-D-L    GD    Pts\n`;
+    message += `-------------------------------------------\n`;
+
+    standings.forEach((team) => {
+      const { position, team: { name }, playedGames, won, draw, lost, goalDifference, points } = team;
+
+      // Process team name
+      let displayName;
+      if (name.includes("Real Madrid")) displayName = "Real Madrid";
+      else if (name.includes("Barcelona")) displayName = "Barcelona";
+      else if (name.includes("Atletico Madrid")) displayName = "Atletico";
+      else displayName = name.replace(" CF", "").replace(" FC", "").split(" ")[0];
+
+      // Get emoji (default to ⚽ if not found)
+      const emoji = teamEmojis[displayName] || "⚽";
+      
+      // Align columns
+      message += `${position.toString().padEnd(4)} ${emoji} ${displayName.padEnd(11)} ${playedGames.toString().padEnd(4)} ` +
+                 `${`${won}-${draw}-${lost}`.padEnd(7)} ${goalDifference >= 0 ? '+' : ''}${goalDifference.toString().padEnd(5)} ${points}\n`;
+    });
+
+    message += `\n🔹 *Pld = Played | GD = Goal Difference*`;
+    await m.reply(message);
+
+  } catch (error) {
+    m.reply(`❌ Error fetching La Liga: ${error.message}`);
+  }
+  break;
+}
+		      
+//========================================================================================================================//
+	      case "bundesliga":
+case "bl-table": {
+  try {
+    const response = await fetch("https://api.football-data.org/v4/competitions/BL1/standings", {
       headers: { 
         'X-Auth-Token': '9f66ad8d03384d4d98e8a6e631a60ee1' // Your API key
       }
@@ -4062,103 +4208,126 @@ case "epl-table": {
     }
 
     const standings = data.standings[0].table;
-
-    let message = `*⚽ EPL STANDINGS 2023/24 ⚽*\n`;
+    let message = `⚽ *BUNDESLIGA STANDINGS 2023/24* ⚽\n\n`;
     message += `📅 Updated: ${new Date().toLocaleString()}\n\n`;
-    message += "```";
-    message += `#  Team          P  | W  | D  | L  | GD   | Pts\n`;
-    message += `-----------------------------------------------\n`;
+
+    // Team emoji mappings
+    const teamEmojis = {
+      "Bayern": "🔴",
+      "Dortmund": "🟡",
+      "Leipzig": "🔴⚪",
+      "Leverkusen": "🔴⚫",
+      "Frankfurt": "⚪⚫",
+      "Wolfsburg": "🟢",
+      "Gladbach": "⚫🟢",
+      "Freiburg": "🔴⚪",
+      "Hoffenheim": "🔵",
+      "Union Berlin": "🔴⚪"
+    };
+
+    // Header
+    message += `Pos  Team           Pld   W-D-L    GD    Pts\n`;
+    message += `-------------------------------------------\n`;
 
     standings.forEach((team) => {
-      const { 
-        position, 
-        team: { name }, 
-        playedGames, 
-        won, 
-        draw, 
-        lost, 
-        goalDifference, 
-        points 
-      } = team;
+      const { position, team: { name }, playedGames, won, draw, lost, goalDifference, points } = team;
 
-      // Team name rules
+      // Process team name
       let displayName;
-      if (name === "Manchester United FC") {
-        displayName = "Man Utd";
-      } else if (name === "Manchester City FC") {
-        displayName = "Man City";
-      } else {
-        displayName = name.split(" ")[0]; // Only first word for others
-      }
+      if (name.includes("Bayern")) displayName = "Bayern";
+      else if (name.includes("Dortmund")) displayName = "Dortmund";
+      else if (name.includes("RB Leipzig")) displayName = "Leipzig";
+      else displayName = name.replace(" FC", "").replace(" TSG", "").split(" ")[0];
 
-      // Top 5 marker
-      const posMarker = position <= 5 ? "🔝" : "  ";
-
-      // Neat formatting (no | after team name)
-      message += `${position.toString().padEnd(2)}${posMarker} ${displayName.padEnd(12)} ${playedGames.toString().padEnd(2)} | ${won.toString().padEnd(2)} | ${draw.toString().padEnd(2)} | ${lost.toString().padEnd(2)} | ${(goalDifference >= 0 ? "+" : "") + goalDifference.toString().padEnd(3)} | ${points.toString().padEnd(3)}\n`;
+      // Get emoji (default to ⚽ if not found)
+      const emoji = teamEmojis[displayName] || "⚽";
+      
+      // Align columns
+      message += `${position.toString().padEnd(4)} ${emoji} ${displayName.padEnd(11)} ${playedGames.toString().padEnd(4)} ` +
+                 `${`${won}-${draw}-${lost}`.padEnd(7)} ${goalDifference >= 0 ? '+' : ''}${goalDifference.toString().padEnd(5)} ${points}\n`;
     });
 
-    message += "```";
-    message += `\n\n📖 *Legend:*\n`;
-    message += `• P = Played\n`;
-    message += `• W = Wins\n`;
-    message += `• D = Draws\n`;
-    message += `• L = Losses\n`;
-    message += `• GD = Goal Difference\n`;
-    message += `• Pts = Points\n`;
-
+    message += `\n🔹 *Pld = Played | GD = Goal Difference*`;
     await m.reply(message);
 
   } catch (error) {
-    m.reply(`❌ Error: ${error.message}`);
+    // Fallback to dreaded.site if main API fails
+    try {
+      const fallbackData = await fetchJson('https://api.dreaded.site/api/standings/BL1');
+      const fallbackStandings = fallbackData.data;
+      
+      // Add basic emojis to fallback response
+      const formattedStandings = fallbackStandings
+        .replace("Bayern Munich", "🔴 Bayern")
+        .replace("Borussia Dortmund", "🟡 Dortmund")
+        .replace("RB Leipzig", "🔴⚪ Leipzig");
+      
+      await m.reply(`⚽ *BUNDESLIGA STANDINGS*\n\n${formattedStandings}`);
+    } catch (err) {
+      m.reply(`❌ Error: ${error.message}\nFailed to fetch from both APIs`);
+    }
   }
   break;
 }
 		      
 //========================================================================================================================//
-	      case "laliga": case "pd-table": {
-try {
-        const data = await fetchJson('https://api.dreaded.site/api/standings/PD');
-        const standings = data.data;
-
-        const message = `𝗖𝘂𝗿𝗿𝗲𝗻𝘁 𝗟𝗮𝗹𝗶𝗴𝗮 𝗧𝗮𝗯𝗹𝗲 𝗦𝘁𝗮𝗻𝗱𝗶𝗻𝗴𝘀:-\n\n${standings}`;
-        await m.reply(message);
-
-    } catch (error) {
-        m.reply('Something went wrong. Unable to fetch 𝗟𝗮𝗹𝗶𝗴𝗮 standings.');
-  }
-}   
-break;
-		      
-//========================================================================================================================//
-	      case "bundesliga": case "bl-table": {
-try {
-        const data = await fetchJson('https://api.dreaded.site/api/standings/BL1');
-        const standings = data.data;
-
-        const message = `𝗖𝘂𝗿𝗿𝗲𝗻𝘁 𝗕𝘂𝗻𝗱𝗲𝘀𝗹𝗶𝗴𝗮 𝗧𝗮𝗯𝗹𝗲 𝗦𝘁𝗮𝗻𝗱𝗶𝗻𝗴𝘀\n\n${standings}`;
-        await m.reply(message);
-
-    } catch (error) {
-        m.reply('Something went wrong. Unable to fetch 𝗕𝘂𝗻𝗱𝗲𝘀𝗹𝗶𝗴𝗮 standings.');
-    }
-}
-break;
-		      
-//========================================================================================================================//
-	      case "ligue-1": case "lg-1": {
+	      case "ligue-1": 
+case "lg-1": {
   try {
-        const data = await fetchJson('https://api.dreaded.site/api/standings/FL1');
-        const standings = data.data;
+    // Try Football-Data.org API first
+    const response = await fetch("https://api.football-data.org/v4/competitions/FL1/standings", {
+      headers: { 
+        'X-Auth-Token': '9f66ad8d03384d4d98e8a6e631a60ee1' // Your API key
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.standings?.[0]?.table) {
+      const standings = data.standings[0].table;
+      let message = `⚽ *LIGUE 1 STANDINGS 2023/24* ⚽\n\n`;
+      message += `📅 Updated: ${new Date().toLocaleString()}\n\n`;
 
-        const message = `𝗖𝘂𝗿𝗿𝗲𝗻𝘁 𝗟𝗶𝗴𝘂𝗲-1 𝗧𝗮𝗯𝗹𝗲 𝗦𝘁𝗮𝗻𝗱𝗶𝗻𝗴𝘀\n\n${standings}`;
-        await m.reply(message);
+      // Header
+      message += `Pos  Team            Pld   W-D-L    GD    Pts\n`;
+      message += `--------------------------------------------\n`;
 
-    } catch (error) {
-        m.reply('Something went wrong. Unable to fetch 𝗹𝗶𝗴𝘂𝗲-1 standings.');
+      standings.forEach((team) => {
+        const { position, team: { name }, playedGames, won, draw, lost, goalDifference, points } = team;
+
+        // Shorten long names (PSG instead of Paris Saint-Germain)
+        let displayName = name.includes("Paris Saint-Germain") ? "PSG" 
+                         : name.replace(" FC", "").replace(" Olympique", "").split(" ")[0];
+        
+        // Align columns
+        message += `${position.toString().padEnd(4)} ${displayName.padEnd(14)} ${playedGames.toString().padEnd(4)} ` +
+                   `${`${won}-${draw}-${lost}`.padEnd(7)} ${goalDifference >= 0 ? '+' : ''}${goalDifference.toString().padEnd(5)} ${points}\n`;
+      });
+
+      message += `\n🔹 *Pld = Played | GD = Goal Difference*`;
+      await m.reply(message);
+    } else {
+      throw new Error("No data from Football-Data.org");
     }
+
+  } catch (error) {
+    // Fallback to dreaded.site if primary API fails
+    try {
+      const fallbackData = await fetchJson('https://api.dreaded.site/api/standings/FL1');
+      const fallbackStandings = fallbackData.data;
+      
+      // Format raw text with basic alignment
+      const formattedStandings = fallbackStandings
+        .replace(/\n/g, "\n      ") // Indent each line
+        .replace("Paris Saint-Germain", "PSG");
+      
+      await m.reply(`⚽ *LIGUE 1 STANDINGS*\n\n      ${formattedStandings}`);
+    } catch (err) {
+      m.reply(`❌ Error: Failed to fetch from both APIs`);
+    }
+  }
+  break;
 }
-break;
 		      
 //========================================================================================================================//
 	      case "serie-a": case "sa-table":{
