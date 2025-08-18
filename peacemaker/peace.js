@@ -4049,49 +4049,50 @@ break;
 	     case "epl": 
 case "epl-table": {
   try {
-    const data = await fetchJson('https://api.dreaded.site/api/standings/PL');
-    const standings = data.data;
-
-    // Check if API returns raw text (fallback)
-    if (typeof standings === 'string') {
-      await m.reply(`ᴇᴘʟ ᴛᴀʙʟᴇ ⚽\n\n${standings}`);
-      return;
+    // Fetch EPL standings from Football-Data.org
+    const response = await fetch("https://api.football-data.org/v4/competitions/PL/standings", {
+      headers: { 
+        'X-Auth-Token': '9f66ad8d03384d4d98e8a6e631a60ee1' // Your API key
+      }
+    });
+    
+    const data = await response.json();
+    
+    // Check if data is valid
+    if (!data.standings || !data.standings[0].table) {
+      throw new Error("No standings data available.");
     }
 
-    // Stylish small-caps title + table format
-    let message = `🅴🅿🅻 🆃🅰🅱🅻🅴 🆂🆃🅰🅽🅳🅸🅽🅶🆂 ⚽\n\n`; // Small-caps effect
-    message += `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n`;
-    message += `  #  | Team          | Pts | MP | W-D-L | Form\n`;
-    message += `─────|──────────────|─────|────|───────|──────\n`;
+    const standings = data.standings[0].table;
+    let message = `⚽ *EPL STANDINGS 2023/24* ⚽\n\n`;
+    message += `📅 Last Updated: ${new Date().toLocaleString()}\n\n`;
+    message += `| # | Team           | Pld | W-D-L | GD  | Pts |\n`;
+    message += `|---|----------------|-----|-------|-----|-----|\n`;
 
     standings.forEach((team) => {
       const { 
         position, 
-        name, 
-        points, 
-        played, 
-        wins, 
-        draws, 
-        losses, 
-        form 
+        team: { name }, 
+        playedGames, 
+        won, 
+        draw, 
+        lost, 
+        goalDifference, 
+        points 
       } = team;
-
-      // Format form (last 5 matches: ✅/⚪/❌)
-      const formIcons = form.map(result => 
-        result === 'W' ? '✅' : result === 'D' ? '⚪' : '❌'
-      ).join('');
-
-      // Shorten long team names (e.g., "Manchester United" → "Man Utd")
-      const shortName = name.length > 12 ? 
-        name.replace(/United|City|Hotspur|Albion/g, '').trim() : name;
-
-      message += ` ${position.toString().padEnd(3)} | ${shortName.padEnd(12)} | ${points.toString().padEnd(3)} | ${played}  | ${wins}-${draws}-${losses} | ${formIcons}\n`;
+      
+      // Shorten long team names (e.g., "Tottenham Hotspur" → "Tottenham")
+      const shortName = name.replace(" FC", "").replace(" AFC", "").split(" ")[0];
+      
+      message += `| ${position} | ${shortName.padEnd(12)} | ${playedGames}  | ${won}-${draw}-${lost} | ${goalDifference >= 0 ? '+' : ''}${goalDifference} | ${points} |\n`;
     });
 
-    message += `\n📌 *MP: Matches Played | Form: Last 5 games (✅=Win, ⚪=Draw, ❌=Loss)*`;
+    message += `\n🔹 *Pld: Played | W-D-L: Wins-Draws-Losses | GD: Goal Difference*\n`;
     await m.reply(message);
+
   } catch (error) {
-    m.reply('⚠️ *Failed to fetch EPL standings. Try again later.*');
+    console.error(error); // Log error for debugging
+    m.reply(`❌ Failed to fetch EPL table. (${error.message || "Server error"})`);
   }
   break;
 }
