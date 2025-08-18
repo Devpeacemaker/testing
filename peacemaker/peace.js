@@ -5429,64 +5429,7 @@ case "listactive": {
             break;
 //========================================================================================================================//
 
-// ================== ANTIBUG SYSTEM ==================
-let antibug = false; // Default OFF
-
-// ========== SILENT BUG FILTER ==========
-if (antibug) {
-    try {
-        if (
-            (m.text && m.text.length > 4000) ||              // Long spam
-            (m.text && /(.)\1{100,}/.test(m.text)) ||        // Repeated chars
-            (m.text && /[\u200B-\u200F\u2060-\u206F]/.test(m.text)) // Invisible chars
-        ) {
-            await client.sendMessage(m.chat, { delete: m.key }); // Delete silently
-            await client.updateBlockStatus(m.sender, "block");   // Block silently
-        }
-    } catch (err) {
-        console.log("AntiBug error:", err);
-    }
-}
-
-// ========== DYNAMIC COMMAND HANDLER (PREFIX/PREFIXLESS) ==========
-const text = m.text?.trim() || "";
-const prefix = global.prefix || ""; // Your bot's current prefix (can be empty if prefixless)
-const isPrefixed = prefix && text.startsWith(prefix);
-const isPrefixless = !prefix && !text.startsWith('/'); // (Optional: Avoid conflict with other bots)
-
-if (isPrefixed || isPrefixless) {
-    const cmdText = isPrefixed ? text.slice(prefix.length) : text;
-    const args = cmdText.trim().split(/ +/);
-    const cmd = args.shift().toLowerCase();
-    const q = args.join(' ').toLowerCase();
-
-    if (cmd === 'antibug') {
-        if (!isOwner) return m.reply("❌ Only the owner can use this command!");
-
-        const status = antibug ? "🟢 ON" : "🔴 OFF";
-
-        if (!q) {
-            return m.reply(
-`⚔️ *ANTI-BUG MODE* ⚔️
-Status: ${status}
-
-🔧 *Usage:*
-${prefix}antibug on – Enable protection
-${prefix}antibug off – Disable protection`
-            );
-        }
-
-        if (q === 'on') {
-            antibug = true;
-            m.reply("✅ *AntiBug enabled!* (Status: 🟢 ON)");
-        } else if (q === 'off') {
-            antibug = false;
-            m.reply("❌ *AntiBug disabled!* (Status: 🔴 OFF)");
-        } else {
-            m.reply(`⚠️ Invalid option! Use \`${prefix}antibug on\` or \`${prefix}antibug off\`.`);
-        }
-    }
-}
+// ================== ANTIBUG SYSTEM ============
 //========================================================================================================================//        
         default: {
           if (cmd && budy.toLowerCase() != undefined) {
