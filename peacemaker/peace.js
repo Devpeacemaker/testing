@@ -4062,10 +4062,12 @@ case "epl-table": {
     }
 
     const standings = data.standings[0].table;
-    let message = `⚽ *EPL STANDINGS 2023/24* ⚽\n\n`;
+
+    let message = `*⚽ EPL STANDINGS 2023/24 ⚽*\n`;
     message += `📅 Updated: ${new Date().toLocaleString()}\n\n`;
-    message += `| # | Team           | Pld | W-D-L | GD  | Pts |\n`;
-    message += `|---|----------------|-----|-------|-----|-----|\n`;
+    message += "```";
+    message += `#  Team          P  | W  | D  | L  | GD   | Pts\n`;
+    message += `-----------------------------------------------\n`;
 
     standings.forEach((team) => {
       const { 
@@ -4079,16 +4081,32 @@ case "epl-table": {
         points 
       } = team;
 
-      // Shorten ONLY Manchester United and Manchester City
-      let displayName = name;
-      if (name === "Manchester United FC") displayName = "Man Utd";
-      if (name === "Manchester City FC") displayName = "Man City";
-      if (name.endsWith(" FC")) displayName = displayName.replace(" FC", ""); // Remove "FC" for others
+      // Team name rules
+      let displayName;
+      if (name === "Manchester United FC") {
+        displayName = "Man Utd";
+      } else if (name === "Manchester City FC") {
+        displayName = "Man City";
+      } else {
+        displayName = name.split(" ")[0]; // Only first word for others
+      }
 
-      message += `| ${position} | ${displayName.padEnd(14)} | ${playedGames}  | ${won}-${draw}-${lost} | ${goalDifference >= 0 ? '+' : ''}${goalDifference} | ${points} |\n`;
+      // Top 5 marker
+      const posMarker = position <= 5 ? "🔝" : "  ";
+
+      // Neat formatting (no | after team name)
+      message += `${position.toString().padEnd(2)}${posMarker} ${displayName.padEnd(12)} ${playedGames.toString().padEnd(2)} | ${won.toString().padEnd(2)} | ${draw.toString().padEnd(2)} | ${lost.toString().padEnd(2)} | ${(goalDifference >= 0 ? "+" : "") + goalDifference.toString().padEnd(3)} | ${points.toString().padEnd(3)}\n`;
     });
 
-    message += `\n🔹 *Pld: Played | W-D-L: Wins-Draws-Losses | GD: Goal Difference*`;
+    message += "```";
+    message += `\n\n📖 *Legend:*\n`;
+    message += `• P = Played\n`;
+    message += `• W = Wins\n`;
+    message += `• D = Draws\n`;
+    message += `• L = Losses\n`;
+    message += `• GD = Goal Difference\n`;
+    message += `• Pts = Points\n`;
+
     await m.reply(message);
 
   } catch (error) {
