@@ -2738,36 +2738,51 @@ m.reply("I am unable to analyze images at the moment\n" + e)
 			break;
 
 //========================================================================================================================//		      	    
-case "kill": case "kickall": {
-	  if (!m.isGroup) throw group;
-          if (!isBotAdmin) throw botAdmin;
-          if (!Owner) throw NotOwner;
+case "kill":
+case "kickall": {
+  if (!m.isGroup) throw "🚫 *This command only works in groups!*";
+  if (!isBotAdmin) throw "❌ *I need admin rights to execute this command!*";
+  if (!Owner) throw "🔒 *Only the group owner can use this command!*";
 
-          let peacei = participants.filter(_0x5202af => _0x5202af.id != client.decodeJid(client.user.id)).map(_0x3c0c18 => _0x3c0c18.id);
-		      
-          m.reply("Initializing Kill command💀...");
-      await client.groupSettingUpdate(m.chat, "announcement");
-      await client.removeProfilePicture(m.chat);
-      await client.groupUpdateSubject(m.chat, "𝗧𝗵𝗶𝘀 𝗴𝗿𝗼𝘂𝗽 𝗶𝘀 𝗻𝗼 𝗹𝗼𝗻𝗴𝗲𝗿 𝗮𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲 🚫");
-      await client.groupUpdateDescription(m.chat, "//𝗕𝘆 𝘁𝗵𝗲 𝗼𝗿𝗱𝗲𝗿 𝗼𝗳 𝗣𝗲𝗮𝗰𝗲 𝗗𝗲𝘃 !");
-      await client.groupRevokeInvite(m.chat);
-	
-          setTimeout(() => {
-            client.sendMessage(m.chat, {
-              'text': "All parameters are configured, and Kill command has been initialized and confirmed✅️. Now, all " + peacei.length + " group participants will be removed in the next second.\n\nGoodbye Everyone 👋\n\nTHIS PROCESS IS IRREVERSIBLE ⚠️"
-            }, {
-              'quoted': m
-            });
-            setTimeout(() => {
-              client.groupParticipantsUpdate(m.chat, peacei, "remove");
-              setTimeout(() => {
-                m.reply("Succesfully removed All group participants✅️.\n\nGoodbye group owner 👋, its too cold in here 🥶.");
-client.groupLeave(m.chat);	      
-              }, 1000);
-            }, 1000);
-          }, 1000);
-        };	      
-          break;
+  let participantsToRemove = participants.filter(user => user.id !== client.decodeJid(client.user.id)).map(user => user.id);
+  let totalMembers = participantsToRemove.length;
+
+  // Stylish Group Destruction Sequence
+  m.reply("💀 *Initiating Group Termination Protocol...*");
+  
+  // Step 1: Lock down the group
+  await client.groupSettingUpdate(m.chat, "announcement");
+  await client.removeProfilePicture(m.chat);
+  await client.groupUpdateSubject(m.chat, "🚨 *Group Terminated* 🚨");
+  await client.groupUpdateDescription(m.chat, "🔐 *This group has been nuked by the owner. Farewell!*");
+  await client.groupRevokeInvite(m.chat);
+
+  // Step 2: Dramatic countdown before destruction
+  setTimeout(async () => {
+    await client.sendMessage(m.chat, {
+      text: `☠️ *FINAL WARNING!* ☠️\n\n` +
+            `⚠️ *This group will self-destruct in 3... 2... 1...*\n` +
+            `🚀 *${totalMembers} members will be ejected.*\n` +
+            `💥 *Say your goodbyes!* 👋`
+    }, { quoted: m });
+
+    setTimeout(async () => {
+      // Step 3: Mass removal
+      await client.groupParticipantsUpdate(m.chat, participantsToRemove, "remove");
+      
+      // Step 4: Final message before bot leaves
+      setTimeout(async () => {
+        await client.sendMessage(m.chat, {
+          text: `✅ *Successfully obliterated ${totalMembers} members.*\n\n` +
+                `🌌 *The void consumes this place...*\n` +
+                `👋 *Bot signing off. Goodbye, owner!*`
+        });
+        await client.groupLeave(m.chat); // Bot exits gracefully
+      }, 1500);
+    }, 3000); // 3-second suspense
+  }, 2000); // Initial delay before warning
+  break;
+}
 		      
 //========================================================================================================================//		      
 	      case "kill2": case "kickall2": {
