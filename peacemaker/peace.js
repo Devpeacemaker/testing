@@ -584,252 +584,247 @@ if (antilinkall === 'on' && body.includes('https://') && !Owner && isBotAdmin &&
 if (cmd) {
   switch (command) {
     case "menu":
-      await mp3d()
-      let cap = `*Hello there*😁, ${getGreeting()}\n\n╔══ *PEACE HUB* ══╗\n` +
-  `║ *⚡ Owner*: Peacemaker\n` +
-  `║ *⚡ Prefix*: [ ${prefix} ]\n` +
-  `║ *⚡ Mode*: ${mode}\n` +
-  `║ *⚡ Platform*: ${process.env.NODE_ENV === 'production' ? 'Heroku' : 'Local'}\n` +
-  `║ *⚡ Commands*: ${totalcmds()}\n` +
-  `║ *⚡ Speed*: ${Rspeed.toFixed(4)} ms\n` +
-  `║ *⚡ Time*: ${getCurrentTimeInNairobi()}\n` +
-  `║ *⚡ RAM*: ${ram()}\n` +   
-  `╠════「 *DOWNLOAD* 」═╣\n` +
-  `║ • Video\n` +
-  `║ • Video2\n` +
-  `║ • Play\n` +
-  `║ • Play2\n` +
-  `║ • Song\n` +
-  `║ • Song2\n` +
-  `║ • Fbdl\n` +
-  `║ • Tiktok\n` +
-  `║ • Twitter\n` +
-  `║ • Instagram\n` +
-  `║ • Pinterest\n` +
-  `║ • Movie\n` +
-  `║ • Lyrics\n` +
-  `║ • Whatsong\n` +
-  `║ • Yts\n` +
-  `║ • Ytmp3\n` +
-  `║ • Ytmp4\n` +
-  `╠════「 *CONVERT* 」═╣\n` +
-  `║ • Sticker\n` +
-  `║ • Smeme\n` +
-  `║ • Photo\n` +
-  `║ • Mp4\n` +
-  `║ • Retrieve\n` +
-  `║ • Vv\n` +
-  `║ • Vv2\n` +
-  `║ • Screenshot\n` +
-  `║ • Mix\n` +
-  `║ • Take\n` +
-  `║ • Tweet\n` +
-  `║ • Quotely\n` +
-  `╠════「 *SETTINGS* 」═╣\n` +
-  `║ • Antidelete\n` +
-  `║ • Antiedit\n` +
-  `║ • Anticall\n` +
-  `║ • Antibot\n` +
-  `║ • Badword\n` +
-  `║ • Antitag\n` +
-  `║ • Antilink\n` +
-  `║ • Antilinkall\n` +
-  `║ • Gptdm\n` +
-  `║ • Autoview\n` +
-  `║ • Autolike\n` +
-  `║ • Autoread\n` +
-  `║ • Autobio\n` +
-  `║ • Mode\n` +
-  `║ • Prefix\n` +
-  `║ • Welcomegoodbye\n` +
-  `║ • Wapresence\n` +
-  `╠════「 *FOOTBALL* 」═╣\n` +
-  `║ • Epl\n` +
-  `║ • Laliga\n` +
-  `║ • Serie-A\n` +
-  `║ • Bundesliga\n` +
-  `║ • Ligue-1\n` +
-  `║ • Fixtures\n` +
-  `╠════「 *AI* 」═╣\n` +
-  `║ • Ai\n` +
-  `║ • Ai2\n` +
-  `║ • Vision\n` +
-  `║ • Define\n` +
-  `║ • Peace\n` +
-  `║ • Gemini\n` +
-  `║ • Google\n` +
-  `║ • Gpt\n` +
-  `║ • Gpt2\n` +
-  `║ • Gpt3\n` +
-  `║ • Gpt4\n` +
-  `╠════「 *GROUP* 」═╣\n` +
-  `║ • Approve\n` +
-  `║ • Reject\n` +
-  `║ • Promote\n` +
-  `║ • Demote\n` +
-  `║ • Delete\n` +
-  `║ • Remove\n` +
-  `║ • Faker\n` +
-  `║ • Foreigners\n` +
-  `║ • Close\n` +
-  `║ • Open\n` +
-  `║ • CloseTime\n` +
-  `║ • OpenTime\n` +
-  `║ • Disp-Off\n` +
-  `║ • Disp-1\n` +
-  `║ • Disp-7\n` +
-  `║ • Disp-90\n` +
-  `║ • Icon\n` +
-  `║ • Gcprofile\n` +
-  `║ • Subject\n` +
-  `║ • Desc\n` +
-  `║ • Leave\n` +
-  `║ • Add\n` +
-  `║ • Tagall\n` +
-  `║ • Hidetag\n` +
-  `║ • Revoke\n` +
-  `║ • Mute\n` +
-  `║ • Unmute\n` +
-  `╠════「 *CODING* 」═╣\n` +
-  `║ • Carbon\n` +
-  `║ • Compile-C\n` +
-  `║ • Compile-C++\n` +
-  `║ • Compile-JS\n` +
-  `║ • Compile-PY\n` +
-  `║ • Inspect\n` +
-  `║ • Encrypte\n` +
-  `║ • Eval\n` +
-  `╠════「 *GENERAL* 」═╣\n` +
-  `║ • Owner\n` +
-  `║ • Script\n` +
-  `║ • Menu\n` +
-  `║ • List\n` +
-  `║ • Ping\n` +
-  `║ • Poll\n` +
-  `║ • Alive\n` +
-  `║ • Speed\n` +
-  `║ • Repo\n` +
-  `║ • Runtime\n` +
-  `║ • Uptime\n` +
-  `║ • Dp\n` +
-  `║ • Dlt\n` +
-  `║ • Mail\n` +
-  `║ • Inbox\n` +
-  `╠════「 *OWNER* 」═╣\n` +
-  `║ • Restart\n` +
-  `║ • Admin\n` +
-  `║ • Cast\n` +
-  `║ • Broadcast\n` +
-  `║ • Join\n` +
-  `║ • Getvar\n` +
-  `║ • Getcase\n` +
-  `║ • Redeploy\n` +
-  `║ • Update\n` +
-  `║ • Setvar\n` +
-  `║ • Botpp\n` +
-  `║ • Fullpp\n` +
-  `║ • Block\n` +
-  `║ • Unblock\n` +
-  `║ • Kill\n` +
-  `║ • Kill2\n` +
-  `║ • Save\n` +
-  `║ • Blocklist\n` +
-  `╠════「 *LOGO* 」═╣\n` +
-  `║ • Hacker\n` +
-  `║ • Hacker2\n` +
-  `║ • Graffiti\n` +
-  `║ • Cat\n` +
-  `║ • Sand\n` +
-  `║ • Gold\n` +
-  `║ • Arena\n` +
-  `║ • Dragonball\n` +
-  `║ • Naruto\n` +
-  `║ • Child\n` +
-  `║ • Leaves\n` +
-  `║ • 1917\n` +
-  `║ • Typography\n` +
-  `╠════「 *TEXT MAKER* 」═╣\n` +
-  `║ • Purple\n` +
-  `║ • Neon\n` +
-  `║ • Noel\n` +
-  `║ • Metallic\n` +
-  `║ • Devil\n` +
-  `║ • Impressive\n` +
-  `║ • Snow\n` +
-  `║ • Water\n` +
-  `║ • Thunder\n` +
-  `║ • Ice\n` +
-  `║ • Matrix\n` +
-  `║ • Silver\n` +
-  `║ • Light\n` +
-  `╠════「 *UTILITIES* 」═╣\n` +
-  `║ • Weather\n` +
-  `║ • Github\n` +
-  `║ • Gitclone\n` +
-  `║ • Removebg\n` +
-  `║ • Remini\n` +
-  `║ • Tts\n` +
-  `║ • Trt\n` +
-  `║ • Calc\n` +
-  `╠════「 *RANDOM* 」═╣\n` +
-  `║ • Fact\n` +
-  `║ • Funfact\n` +
-  `║ • Catfact\n` +
-  `║ • Advice\n` +
-  `║ • Joke\n` +
-  `║ • News\n` +
-  `║ • Rship\n` +
-  `║ • Gpass\n` +
-  `║ • Anime\n` +
-  `║ • Animegirl\n` +
-  `║ • Quotes\n` +
-  `║ • Pickupline\n` +
-  `╠════「 *OTHER* 」═╣\n` +
-  `║ • Bible\n` +
-  `║ • Quran\n` +
-  `║ • Pair\n` +
-  `║ • Credits\n` +
-  `║ • Upload\n` +
-  `║ • Attp\n` +
-  `║ • Url\n` +
-  `║ • Image\n` +
-  `║ • System\n` +
-  `╚════「 *PEACE HUB* 」═╝`;
-  
-if (menu === 'VIDEO') {
+      await mp3d();
 
-                   client.sendMessage(m.chat, {
-                        video: fs.readFileSync('./Media/menu.mp4'),
-                        caption: cap,
-                        gifPlayback: true
-                    }, {
-                        quoted: m
-                    })
-                } else if (menu === 'TEXT') {
-client.sendMessage(from, { text: cap}, {quoted: m})
+      let cap = `*Hello there* 😁, ${getGreeting()}
 
-} else if (menu === 'IMAGE') {
-client.sendMessage(m.chat, { image: { url: menulink }, caption: cap }, { quoted: m })
-} else if (menu === 'LINK') {
-client.sendMessage(m.chat, {
-                        text: cap,
-                        contextInfo: {
-                            externalAdReply: {
-                                showAdAttribution: true,
-                                title: `𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱`,
-                                body: `${runtime(process.uptime())}`,
-                                thumbnail: fs.readFileSync('./Media/Peace.jpg'),
-                                sourceUrl: 'https://wa.me/254752818245?text=Hello+PeaceHub+dev+I+need+a+bot',
-                                mediaType: 1,
-                                renderLargerThumbnail: true
-                            }
-                        }
-                    }, {
-                        quoted: m
-                    })
+━━━━━━━━━━━ 〔 *PEACE HUB* 〕 ━━━━━━━━━━━
+⚡ *Owner*: Peacemaker
+⚡ *Prefix*: [ ${prefix} ]
+⚡ *Mode*: ${mode}
+⚡ *Platform*: ${process.env.NODE_ENV === 'production' ? 'Heroku' : 'Local'}
+⚡ *Commands*: ${totalcmds()}
+⚡ *Speed*: ${Rspeed.toFixed(4)} ms
+⚡ *Time*: ${getCurrentTimeInNairobi()}
+⚡ *RAM*: ${ram()}
 
+━━━〔 *DOWNLOAD* 〕━━━
+• Video
+• Video2
+• Play
+• Play2
+• Song
+• Song2
+• Fbdl
+• Tiktok
+• Twitter
+• Instagram
+• Pinterest
+• Movie
+• Lyrics
+• Whatsong
+• Yts
+• Ytmp3
+• Ytmp4
+
+━━━〔 *CONVERT* 〕━━━
+• Sticker
+• Smeme
+• Photo
+• Mp4
+• Retrieve
+• Vv
+• Vv2
+• Screenshot
+• Mix
+• Take
+• Tweet
+• Quotely
+
+━━━〔 *SETTINGS* 〕━━━
+• Antidelete
+• Antiedit
+• Anticall
+• Antibot
+• Badword
+• Antitag
+• Antilink
+• Antilinkall
+• Gptdm
+• Autoview
+• Autolike
+• Autoread
+• Autobio
+• Mode
+• Prefix
+• Welcomegoodbye
+• Wapresence
+
+━━━〔 *FOOTBALL* 〕━━━
+• Epl
+• Laliga
+• Serie-A
+• Bundesliga
+• Ligue-1
+• Fixtures
+
+━━━〔 *AI* 〕━━━
+• Ai
+• Ai2
+• Vision
+• Define
+• Peace
+• Gemini
+• Google
+• Gpt
+• Gpt2
+• Gpt3
+• Gpt4
+
+━━━〔 *GROUP* 〕━━━
+• Approve
+• Reject
+• Promote
+• Demote
+• Delete
+• Remove
+• Faker
+• Foreigners
+• Close
+• Open
+• CloseTime
+• OpenTime
+• Disp-Off
+• Disp-1
+• Disp-7
+• Disp-90
+• Icon
+• Gcprofile
+• Subject
+• Desc
+• Leave
+• Add
+• Tagall
+• Hidetag
+• Revoke
+• Mute
+• Unmute
+
+━━━〔 *CODING* 〕━━━
+• Carbon
+• Compile-C
+• Compile-C++
+• Compile-JS
+• Compile-PY
+• Inspect
+• Encrypte
+• Eval
+
+━━━〔 *GENERAL* 〕━━━
+• Owner
+• Script
+• Menu
+• List
+• Ping
+• Poll
+• Alive
+• Speed
+• Repo
+• Runtime
+• Uptime
+• Dp
+• Dlt
+• Mail
+• Inbox
+
+━━━〔 *OWNER* 〕━━━
+• Restart
+• Admin
+• Cast
+• Broadcast
+• Join
+• Getvar
+• Getcase
+• Redeploy
+• Update
+• Setvar
+• Botpp
+• Fullpp
+• Block
+• Unblock
+• Kill
+• Kill2
+• Save
+• Blocklist
+
+━━━〔 *LOGO* 〕━━━
+• Hacker
+• Hacker2
+• Graffiti
+• Cat
+• Sand
+• Gold
+• Arena
+• Dragonball
+• Naruto
+• Child
+• Leaves
+• 1917
+• Typography
+
+━━━〔 *TEXT MAKER* 〕━━━
+• Purple
+• Neon
+• Noel
+• Metallic
+• Devil
+• Impressive
+• Snow
+• Water
+• Thunder
+• Ice
+• Matrix
+• Silver
+• Light
+
+━━━〔 *UTILITIES* 〕━━━
+• Weather
+• Github
+• Gitclone
+• Removebg
+• Remini
+• Tts
+• Trt
+• Calc
+
+━━━〔 *RANDOM* 〕━━━
+• Fact
+• Funfact
+• Catfact
+• Advice
+• Joke
+• News
+• Rship
+• Gpass
+• Anime
+• Animegirl
+• Quotes
+• Pickupline
+
+━━━〔 *OTHER* 〕━━━
+• Bible
+• Quran
+• Pair
+• Credits
+• Upload
+• Attp
+• Url
+• Image
+• System
+━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+      // 📌 Send ONLY audio + text (no caption/image/video)
+      client.sendMessage(m.chat, {
+        audio: fs.readFileSync('./Media/menu.mp3'),
+        mimetype: 'audio/mpeg',
+        ptt: true
+      }, { quoted: m });
+
+      client.sendMessage(m.chat, { text: cap }, { quoted: m });
+      break;
+  }
 }
-break;
+
 		      
 //========================================================================================================================//
 //========================================================================================================================//
