@@ -582,11 +582,11 @@ if (antilinkall === 'on' && body.includes('https://') && !Owner && isBotAdmin &&
 //========================================================================================================================//	  
     
 if (cmd) {
-switch (command) {
-case "menu":
-await mp3d();
+  switch (command) {
+    case "menu":
+      await mp3d();
 
-let cap = `*Hello there* 😁, ${getGreeting()}
+      let cap = `*Hello there* 😁, ${getGreeting()}
 
 ━━━━━━━━━━━ 〔 PEACE HUB 〕 ━━━━━━━━━━━
 ⚡ Owner: Peacemaker
@@ -813,18 +813,17 @@ let cap = `*Hello there* 😁, ${getGreeting()}
 • System
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
-// 📌 Send ONLY audio + text
-      await client.sendMessage(
-        m.chat,
-        { audio: fs.readFileSync('./Media/menu.mp3'), mimetype: 'audio/mpeg', ptt: true },
-        { quoted: m }
-      );
+      // 📌 Send ONLY audio + text (no caption/image/video)  
+      client.sendMessage(m.chat, {  
+        audio: fs.readFileSync('./Media/menu.mp3'),  
+        mimetype: 'audio/mpeg',  
+        ptt: true  
+      }, { quoted: m });  
 
-      await client.sendMessage(m.chat, { text: cap }, { quoted: m });
-
-      break; // ✅ close case "menu"
-  } // ✅ close switch
-} // ✅ close if (cmd)
+      client.sendMessage(m.chat, { text: cap }, { quoted: m });  
+      break;
+  } // <-- This closes the switch statement
+} // <-- This closes the if statement
   
 
 
