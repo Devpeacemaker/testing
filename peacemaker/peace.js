@@ -822,6 +822,7 @@ if (cmd) {
 
       client.sendMessage(m.chat, { text: cap }, { quoted: m });
       break;
+      } 
   
 
 
