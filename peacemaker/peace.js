@@ -582,23 +582,23 @@ if (antilinkall === 'on' && body.includes('https://') && !Owner && isBotAdmin &&
 //========================================================================================================================//	  
     
 if (cmd) {
-  switch (command) {
-    case "menu":
-      await mp3d();
+switch (command) {
+case "menu":
+await mp3d();
 
-      let cap = `*Hello there* 😁, ${getGreeting()}
+let cap = `*Hello there* 😁, ${getGreeting()}
 
-━━━━━━━━━━━ 〔 *PEACE HUB* 〕 ━━━━━━━━━━━
-⚡ *Owner*: Peacemaker
-⚡ *Prefix*: [ ${prefix} ]
-⚡ *Mode*: ${mode}
-⚡ *Platform*: ${process.env.NODE_ENV === 'production' ? 'Heroku' : 'Local'}
-⚡ *Commands*: ${totalcmds()}
-⚡ *Speed*: ${Rspeed.toFixed(4)} ms
-⚡ *Time*: ${getCurrentTimeInNairobi()}
-⚡ *RAM*: ${ram()}
+━━━━━━━━━━━ 〔 PEACE HUB 〕 ━━━━━━━━━━━
+⚡ Owner: Peacemaker
+⚡ Prefix: [ ${prefix} ]
+⚡ Mode: ${mode}
+⚡ Platform: ${process.env.NODE_ENV === 'production' ? 'Heroku' : 'Local'}
+⚡ Commands: ${totalcmds()}
+⚡ Speed: ${Rspeed.toFixed(4)} ms
+⚡ Time: ${getCurrentTimeInNairobi()}
+⚡ RAM: ${ram()}
 
-━━━〔 *DOWNLOAD* 〕━━━
+━━━〔 DOWNLOAD 〕━━━
 • Video
 • Video2
 • Play
@@ -617,7 +617,7 @@ if (cmd) {
 • Ytmp3
 • Ytmp4
 
-━━━〔 *CONVERT* 〕━━━
+━━━〔 CONVERT 〕━━━
 • Sticker
 • Smeme
 • Photo
@@ -631,7 +631,7 @@ if (cmd) {
 • Tweet
 • Quotely
 
-━━━〔 *SETTINGS* 〕━━━
+━━━〔 SETTINGS 〕━━━
 • Antidelete
 • Antiedit
 • Anticall
@@ -650,7 +650,7 @@ if (cmd) {
 • Welcomegoodbye
 • Wapresence
 
-━━━〔 *FOOTBALL* 〕━━━
+━━━〔 FOOTBALL 〕━━━
 • Epl
 • Laliga
 • Serie-A
@@ -658,7 +658,7 @@ if (cmd) {
 • Ligue-1
 • Fixtures
 
-━━━〔 *AI* 〕━━━
+━━━〔 AI 〕━━━
 • Ai
 • Ai2
 • Vision
@@ -671,7 +671,7 @@ if (cmd) {
 • Gpt3
 • Gpt4
 
-━━━〔 *GROUP* 〕━━━
+━━━〔 GROUP 〕━━━
 • Approve
 • Reject
 • Promote
@@ -700,7 +700,7 @@ if (cmd) {
 • Mute
 • Unmute
 
-━━━〔 *CODING* 〕━━━
+━━━〔 CODING 〕━━━
 • Carbon
 • Compile-C
 • Compile-C++
@@ -710,7 +710,7 @@ if (cmd) {
 • Encrypte
 • Eval
 
-━━━〔 *GENERAL* 〕━━━
+━━━〔 GENERAL 〕━━━
 • Owner
 • Script
 • Menu
@@ -727,7 +727,7 @@ if (cmd) {
 • Mail
 • Inbox
 
-━━━〔 *OWNER* 〕━━━
+━━━〔 OWNER 〕━━━
 • Restart
 • Admin
 • Cast
@@ -747,7 +747,7 @@ if (cmd) {
 • Save
 • Blocklist
 
-━━━〔 *LOGO* 〕━━━
+━━━〔 LOGO 〕━━━
 • Hacker
 • Hacker2
 • Graffiti
@@ -762,7 +762,7 @@ if (cmd) {
 • 1917
 • Typography
 
-━━━〔 *TEXT MAKER* 〕━━━
+━━━〔 TEXT MAKER 〕━━━
 • Purple
 • Neon
 • Noel
@@ -777,7 +777,7 @@ if (cmd) {
 • Silver
 • Light
 
-━━━〔 *UTILITIES* 〕━━━
+━━━〔 UTILITIES 〕━━━
 • Weather
 • Github
 • Gitclone
@@ -787,7 +787,7 @@ if (cmd) {
 • Trt
 • Calc
 
-━━━〔 *RANDOM* 〕━━━
+━━━〔 RANDOM 〕━━━
 • Fact
 • Funfact
 • Catfact
@@ -801,7 +801,7 @@ if (cmd) {
 • Quotes
 • Pickupline
 
-━━━〔 *OTHER* 〕━━━
+━━━〔 OTHER 〕━━━
 • Bible
 • Quran
 • Pair
@@ -813,16 +813,18 @@ if (cmd) {
 • System
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
-      // 📌 Send ONLY audio + text (no caption/image/video)
-      client.sendMessage(m.chat, {
-        audio: fs.readFileSync('./Media/menu.mp3'),
-        mimetype: 'audio/mpeg',
-        ptt: true
-      }, { quoted: m });
+// 📌 Send ONLY audio + text (no caption/image/video)  
+  client.sendMessage(m.chat, {  
+    audio: fs.readFileSync('./Media/menu.mp3'),  
+    mimetype: 'audio/mpeg',  
+    ptt: true  
+  }, { quoted: m });  
 
-      client.sendMessage(m.chat, { text: cap }, { quoted: m });
-      break;
-      } 
+  client.sendMessage(m.chat, { text: cap }, { quoted: m });  
+  break;
+
+} // <-- Close the switch statement
+} // <-- Close the if statement
   
 
 
