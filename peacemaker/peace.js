@@ -813,18 +813,18 @@ let cap = `*Hello there* 😁, ${getGreeting()}
 • System
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
-// 📌 Send ONLY audio + text (no caption/image/video)  
-  client.sendMessage(m.chat, {  
-    audio: fs.readFileSync('./Media/menu.mp3'),  
-    mimetype: 'audio/mpeg',  
-    ptt: true  
-  }, { quoted: m });  
+// 📌 Send ONLY audio + text
+      await client.sendMessage(
+        m.chat,
+        { audio: fs.readFileSync('./Media/menu.mp3'), mimetype: 'audio/mpeg', ptt: true },
+        { quoted: m }
+      );
 
-  client.sendMessage(m.chat, { text: cap }, { quoted: m });  
-  break;
+      await client.sendMessage(m.chat, { text: cap }, { quoted: m });
 
-} // <-- Close the switch statement
-} // <-- Close the if statement
+      break; // ✅ close case "menu"
+  } // ✅ close switch
+} // ✅ close if (cmd)
   
 
 
