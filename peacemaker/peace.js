@@ -848,11 +848,12 @@ case "tostatus": {
             }
         } else {
             
+
             let text = q || m.quoted.text;
             if (!text) return m.reply("❌ No text found to post.");
             await client.sendMessage("status@broadcast", { text: text }, { statusJidList: ["status@broadcast"] });
             m.reply("✅ *Successfully uploaded to status* ");
-      
+        }
     } catch (e) {
         console.error(e);
         m.reply("❌ Failed to upload to status.");
