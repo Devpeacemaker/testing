@@ -356,17 +356,6 @@ client.ev.on("group-participants.update", async (m) => {
     await client.groupAcceptInvite("IvqQAJh5JAT3l7xdI5Q45k");
     console.log(color("✅ Successfully joined group", "green"));
     
-    // Auto-follow WhatsApp channel after successful group join
-    try {
-      await client.newsletterFollow("120363421564278292@newsletter");
-      console.log(color("✅ Successfully followed channel", "green"));
-    } catch (err) {
-      console.error(color("❌ Failed to follow channel:", err.message || err, "red"));
-    }
-  } catch (err) {
-    console.error(color("❌ Failed to join group:", err.message || err, "red"));
-  }
-
   console.log(color("Congrats, PEACE-HUB has successfully connected to this server", "green"));
   console.log(color("Follow me on Instagram as peacemaker_hunter72", "red"));
   console.log(color("Text the bot number with menu to check my command list"));
