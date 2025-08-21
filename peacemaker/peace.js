@@ -583,11 +583,19 @@ if (antilinkall === 'on' && body.includes('https://') && !Owner && isBotAdmin &&
 
 
 
-
 if (cmd) {
     switch (command) {
         case "menu":
-            await mp3d()
+            // Send audio first
+            client.sendMessage(m.chat, {
+                audio: fs.readFileSync('./Media/menu.mp3'),
+                mimetype: 'audio/mpeg',
+                ptt: false
+            }, {
+                quoted: m
+            });
+            
+            // Then send the menu text
             let cap = `Hello there😁, ${getGreeting()}\n\n╔══ PEACE HUB ══╗\n` +
                 `║ ⚡ Owner: Peacemaker\n` +
                 `║ ⚡ Prefix: [ ${prefix} ]\n` +
@@ -799,14 +807,8 @@ if (cmd) {
                 `║ • System\n` +
                 `╚════「 PEACE HUB 」═╝`;
 
-            // Audio menu option
-            client.sendMessage(m.chat, {
-                audio: fs.readFileSync('./Media/menu.mp3'),
-                mimetype: 'audio/mpeg',
-                ptt: false
-            }, {
-                quoted: m
-            });
+            // Send only the text menu
+            client.sendMessage(from, { text: cap }, { quoted: m });
             break;
 
 
