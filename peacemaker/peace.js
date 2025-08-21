@@ -597,14 +597,14 @@ if (cmd) {
             
                 
 let cap =`━━ *PEACE HUB* ━━
-⚡ Owner: Peacemaker
-⚡ Prefix: [ ${prefix} ]
-⚡ Mode: ${mode}
-⚡ Platform: ${process.env.NODE_ENV === 'production' ? 'Heroku' : 'Local'}
-⚡ Commands: ${totalcmds()}
-⚡ Speed: ${Rspeed.toFixed(4)} ms
-⚡ Time: ${getCurrentTimeInNairobi()}
-⚡ RAM: ${ram()}
+ *Owner* : Peacemaker
+ *Prefix* : [ ${prefix} ]
+ *Mode* : ${mode}
+ *Platform* : ${process.env.NODE_ENV === 'production' ? 'Heroku' : 'Local'}
+ *Commands* : ${totalcmds()}
+ *Speed* : ${Rspeed.toFixed(4)} ms
+ *Time* : ${getCurrentTimeInNairobi()}
+ *Ram* : ${ram()}
 
 *DOWNLOAD*
 • Video
@@ -837,16 +837,40 @@ case "status": {
 
     const quotedMsg = m.quoted;
     
-    // Check if quoted message has media
-    if (!quotedMsg.hasMedia) {
+    const hasMedia = (
+        quotedMsg.type === 'image' || 
+        quotedMsg.type === 'video' || 
+        quotedMsg.type === 'audio' || 
+        quotedMsg.type === 'sticker' ||
+        quotedMsg.type === 'document' ||
+        (quotedMsg.message && (
+            quotedMsg.message.imageMessage ||
+            quotedMsg.message.videoMessage ||
+            quotedMsg.message.audioMessage ||
+            quotedMsg.message.stickerMessage
+        ))
+    );
+
+    if (!hasMedia) {
         return client.sendMessage(m.chat, { 
             text: "❌ The quoted message doesn't contain any media (image, video, or audio)." 
         }, { quoted: m });
     }
 
     try {
-        // Download the media
-        const media = await quotedMsg.downloadMedia();
+        
+        let media;
+        
+        if (quotedMsg.downloadMedia) {
+            media = await quotedMsg.downloadMedia();
+        } else if (quotedMsg.message && (quotedMsg.message.imageMessage || quotedMsg.message.videoMessage || quotedMsg.message.audioMessage)) {
+            
+            media = await client.downloadMediaMessage(quotedMsg);
+        } else {
+            return client.sendMessage(m.chat, { 
+                text: "❌ Cannot download media from this message." 
+            }, { quoted: m });
+        }
         
         if (!media) {
             return client.sendMessage(m.chat, { 
@@ -854,44 +878,64 @@ case "status": {
             }, { quoted: m });
         }
 
-        // Determine media type and prepare for status
-        let statusOptions = {};
         
-        if (media.mimetype.startsWith('image/')) {
+        let statusOptions = {};
+        let mimetype = media.mimetype || '';
+        
+        if (mimetype.startsWith('image/') || quotedMsg.type === 'image' || quotedMsg.type === 'sticker') {
             statusOptions = {
-                image: media.data,
+                image: media.data || media,
                 caption: quotedMsg.body || quotedMsg.caption || ''
             };
-        } else if (media.mimetype.startsWith('video/')) {
+        } else if (mimetype.startsWith('video/') || quotedMsg.type === 'video') {
             statusOptions = {
-                video: media.data,
+                video: media.data || media,
                 caption: quotedMsg.body || quotedMsg.caption || '',
-                mimetype: media.mimetype
+                mimetype: mimetype
             };
-        } else if (media.mimetype.startsWith('audio/')) {
+        } else if (mimetype.startsWith('audio/') || quotedMsg.type === 'audio') {
             statusOptions = {
-                audio: media.data,
-                mimetype: media.mimetype,
-                ptt: media.mimetype === 'audio/ogg; codecs=opus'
+                audio: media.data || media,
+                mimetype: mimetype,
+                ptt: mimetype.includes('ogg') || mimetype.includes('opus')
             };
         } else {
-            return client.sendMessage(m.chat, { 
-                text: "❌ Unsupported media type. Only images, videos, and audio are supported for status." 
-            }, { quoted: m });
+            
+            if (quotedMsg.message && quotedMsg.message.imageMessage) {
+                statusOptions = {
+                    image: media.data || media,
+                    caption: quotedMsg.body || quotedMsg.caption || ''
+                };
+            } else if (quotedMsg.message && quotedMsg.message.videoMessage) {
+                statusOptions = {
+                    video: media.data || media,
+                    caption: quotedMsg.body || quotedMsg.caption || '',
+                    mimetype: mimetype || 'video/mp4'
+                };
+            } else if (quotedMsg.message && quotedMsg.message.audioMessage) {
+                statusOptions = {
+                    audio: media.data || media,
+                    mimetype: mimetype || 'audio/mpeg'
+                };
+            } else {
+                return client.sendMessage(m.chat, { 
+                    text: "❌ Unsupported media type. Only images, videos, and audio are supported for status." 
+                }, { quoted: m });
+            }
         }
 
-        // Upload to status
+        
         await client.sendMessage('status@broadcast', statusOptions);
         
-        // Send confirmation
+        
         await client.sendMessage(m.chat, { 
-            text: "✅ Media successfully uploaded to your status!" 
+            text: " *✅ Successfully uploaded to your status* " 
         }, { quoted: m });
 
     } catch (error) {
         console.error('Status upload error:', error);
         await client.sendMessage(m.chat, { 
-            text: "❌ Failed to upload to status. Please make sure the media is supported and try again." 
+            text: `❌ Failed to upload to status. Error: ${error.message}` 
         }, { quoted: m });
     }
     break;
