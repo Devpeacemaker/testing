@@ -828,38 +828,35 @@ let cap =`━━ *PEACE HUB* ━━
 		      
 //========================================================================================================================//
 case "tostatus": {
-    try {
-        if (!m.quoted) return m.reply("❌ Reply to an image, video, or text to post it to your status.");
+  if (!m.quoted) return m.reply("Reply to an image, video or text to post it as your WhatsApp status ✅");
 
-        let mime = (m.quoted.msg || m.quoted).mimetype || "";
-        if (mime) {
-            
-            let media = await m.quoted.download();
-            if (/image/.test(mime)) {
-                await client.sendMessage("status@broadcast", { image: media, caption: q || "" }, { statusJidList: ["status@broadcast"] });
-                m.reply("✅ Image uploaded to status!");
-            } else if (/video/.test(mime)) {
-                await client.sendMessage("status@broadcast", { video: media, caption: q || "" }, { statusJidList: ["status@broadcast"] });
-                m.reply("✅ Video uploaded to status!");
-            } else if (/audio/.test(mime)) {
-                return m.reply("❌ WhatsApp does not allow audio status uploads directly.");
-            } else {
-                return m.reply("❌ Unsupported media type.");
-            }
-        } else {
-            
-
-            let text = q || m.quoted.text;
-            if (!text) return m.reply("❌ No text found to post.");
-            await client.sendMessage("status@broadcast", { text: text }, { statusJidList: ["status@broadcast"] });
-            m.reply("✅ *Successfully uploaded to status* ");
-        }
-    } catch (e) {
-        console.error(e);
-        m.reply("❌ Failed to upload to status.");
+  try {
+    if (m.quoted.mtype === "conversation" || m.quoted.mtype === "extendedTextMessage") {
+      // 📝 TEXT STATUS
+      await client.sendMessage("status@broadcast", { text: m.quoted.text });
+      m.reply("✅ Text posted to your status!");
+    } 
+    else if (m.quoted.mtype === "imageMessage") {
+      // 🖼️ IMAGE STATUS
+      let buffer = await m.quoted.download();
+      await client.sendMessage("status@broadcast", { image: buffer, caption: m.quoted.caption || "" });
+      m.reply("✅ Image posted to your status!");
+    } 
+    else if (m.quoted.mtype === "videoMessage") {
+      // 🎥 VIDEO STATUS
+      let buffer = await m.quoted.download();
+      await client.sendMessage("status@broadcast", { video: buffer, caption: m.quoted.caption || "", mimetype: "video/mp4" });
+      m.reply("✅ Video posted to your status!");
+    } 
+    else {
+      m.reply("⚠️ Unsupported media type. Reply to text, image, or video only!");
     }
+  } catch (err) {
+    console.error("❌ Status upload error:", err);
+    m.reply("❌ Failed to upload to status. Check logs!");
+  }
+  break;
 }
-break;
 //========================================================================================================================//
 
 case "antilink": {
