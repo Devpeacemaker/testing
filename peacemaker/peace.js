@@ -809,7 +809,7 @@ let cap =`━━ *PEACE HUB* ━━
 • Quotes
 • Pickupline
 
-"OTHER*
+*OTHER*
 • Bible
 • Quran
 • Pair
@@ -827,119 +827,31 @@ let cap =`━━ *PEACE HUB* ━━
 
 		      
 //========================================================================================================================//
-case "tostatus":
-case "status": {
-    if (!m.quoted) {
-        return client.sendMessage(m.chat, { 
-            text: "❌ Please quote an image, video, or audio message to upload to your status." 
-        }, { quoted: m });
-    }
-
-    const quotedMsg = m.quoted;
+case "tostatus": {
+    if (!m.quoted) return m.reply("Please reply to an image or video to upload to your status✅");
+    let q = m.quoted ? m.quoted : m;
+    let mime = (q.msg || q).mimetype || "";
     
-    const hasMedia = (
-        quotedMsg.type === 'image' || 
-        quotedMsg.type === 'video' || 
-        quotedMsg.type === 'audio' || 
-        quotedMsg.type === 'sticker' ||
-        quotedMsg.type === 'document' ||
-        (quotedMsg.message && (
-            quotedMsg.message.imageMessage ||
-            quotedMsg.message.videoMessage ||
-            quotedMsg.message.audioMessage ||
-            quotedMsg.message.stickerMessage
-        ))
-    );
-
-    if (!hasMedia) {
-        return client.sendMessage(m.chat, { 
-            text: "❌ The quoted message doesn't contain any media (image, video, or audio)." 
-        }, { quoted: m });
-    }
+    if (!/image|video/.test(mime)) return m.reply("Reply to an *image* or *video* ❌");
 
     try {
-        
-        let media;
-        
-        if (quotedMsg.downloadMedia) {
-            media = await quotedMsg.downloadMedia();
-        } else if (quotedMsg.message && (quotedMsg.message.imageMessage || quotedMsg.message.videoMessage || quotedMsg.message.audioMessage)) {
-            
-            media = await client.downloadMediaMessage(quotedMsg);
-        } else {
-            return client.sendMessage(m.chat, { 
-                text: "❌ Cannot download media from this message." 
-            }, { quoted: m });
-        }
-        
-        if (!media) {
-            return client.sendMessage(m.chat, { 
-                text: "❌ Failed to download the media. Please try again." 
-            }, { quoted: m });
-        }
+        let media = await q.download();
+        if (!media) return m.reply("Failed to download media ❌");
 
-        
-        let statusOptions = {};
-        let mimetype = media.mimetype || '';
-        
-        if (mimetype.startsWith('image/') || quotedMsg.type === 'image' || quotedMsg.type === 'sticker') {
-            statusOptions = {
-                image: media.data || media,
-                caption: quotedMsg.body || quotedMsg.caption || ''
-            };
-        } else if (mimetype.startsWith('video/') || quotedMsg.type === 'video') {
-            statusOptions = {
-                video: media.data || media,
-                caption: quotedMsg.body || quotedMsg.caption || '',
-                mimetype: mimetype
-            };
-        } else if (mimetype.startsWith('audio/') || quotedMsg.type === 'audio') {
-            statusOptions = {
-                audio: media.data || media,
-                mimetype: mimetype,
-                ptt: mimetype.includes('ogg') || mimetype.includes('opus')
-            };
-        } else {
-            
-            if (quotedMsg.message && quotedMsg.message.imageMessage) {
-                statusOptions = {
-                    image: media.data || media,
-                    caption: quotedMsg.body || quotedMsg.caption || ''
-                };
-            } else if (quotedMsg.message && quotedMsg.message.videoMessage) {
-                statusOptions = {
-                    video: media.data || media,
-                    caption: quotedMsg.body || quotedMsg.caption || '',
-                    mimetype: mimetype || 'video/mp4'
-                };
-            } else if (quotedMsg.message && quotedMsg.message.audioMessage) {
-                statusOptions = {
-                    audio: media.data || media,
-                    mimetype: mimetype || 'audio/mpeg'
-                };
-            } else {
-                return client.sendMessage(m.chat, { 
-                    text: "❌ Unsupported media type. Only images, videos, and audio are supported for status." 
-                }, { quoted: m });
-            }
-        }
+        // upload to user status
+        await client.sendMessage("status@broadcast", { 
+            [mime.split("/")[0]]: media,
+            caption: q.text || "",
+            mimetype: mime
+        }, { statusJidList: [m.sender] });
 
-        
-        await client.sendMessage('status@broadcast', statusOptions);
-        
-        
-        await client.sendMessage(m.chat, { 
-            text: " *✅ Successfully uploaded to your status* " 
-        }, { quoted: m });
-
-    } catch (error) {
-        console.error('Status upload error:', error);
-        await client.sendMessage(m.chat, { 
-            text: `❌ Failed to upload to status. Error: ${error.message}` 
-        }, { quoted: m });
+        m.reply("✅ Successfully uploaded to your status");
+    } catch (e) {
+        console.log(e);
+        m.reply("❌ Failed to upload to status");
     }
-    break;
 }
+break;
 //========================================================================================================================//
 
 case "antilink": {
