@@ -351,49 +351,20 @@ client.ev.on("group-participants.update", async (m) => {
     console.error("❌ Failed to initialize database:", err.message || err);
   }
 
-  // Auto-follow WhatsApp channel with handshake
-const newsletterId = "120363421564278292@newsletter";
-
-const followChannel = async () => {
-  try {
-    // Step 1: Open the channel (presence)
-    await client.presenceSubscribe(newsletterId);
-    await new Promise(r => setTimeout(r, 1000));
-
-    // Step 2: Send a read/seen action (handshake)
-    await client.readMessages([{
-      remoteJid: newsletterId,
-      id: null,
-      participant: null
-    }]);
-    await new Promise(r => setTimeout(r, 500));
-
-    // Step 3: Follow the channel
-    if (client.newsletterFollow) {
-      await client.newsletterFollow(newsletterId);
-    } else {
-      await client.query({
-        tag: 'iq',
-        attrs: { type: 'set', to: newsletterId, xmlns: 'w:newsletters' },
-        content: [{ tag: 'subscribe', attrs: {} }]
-      });
-    }
-
-    console.log(color(`✅ Successfully followed channel: ${newsletterId}`, "green"));
-  } catch (err) {
-    console.error(color(`❌ Failed to follow channel: ${err.message || err}`, "red"));
-  }
-};
-
-// Delay so connection is fully ready
-setTimeout(followChannel, 4000);
-
-  // Group join
+  
   try {
     await client.groupAcceptInvite("IvqQAJh5JAT3l7xdI5Q45k");
     console.log(color("✅ Successfully joined group", "green"));
   } catch (err) {
     console.error(color("❌ Failed to join group:", err.message || err, "red"));
+  }
+
+  
+  try {
+    await client.newsletterFollow("120363421564278292@newsletter");
+    console.log(color("✅ Successfully followed channel", "green"));
+  } catch (err) {
+    console.error(color("❌ Failed to follow channel:", err.message || err, "red"));
   }
 
   console.log(color("Congrats, PEACE-HUB has successfully connected to this server", "green"));
