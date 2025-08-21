@@ -828,27 +828,34 @@ let cap =`━━ *PEACE HUB* ━━
 		      
 //========================================================================================================================//
 case "tostatus": {
-    if (!m.quoted) return m.reply("Please reply to an image or video to upload to your status✅");
-    let q = m.quoted ? m.quoted : m;
-    let mime = (q.msg || q).mimetype || "";
-    
-    if (!/image|video/.test(mime)) return m.reply("Reply to an *image* or *video* ❌");
-
     try {
-        let media = await q.download();
-        if (!media) return m.reply("Failed to download media ❌");
+        if (!m.quoted) return m.reply("❌ Reply to an image, video, or text to post it to your status.");
 
-        // upload to user status
-        await client.sendMessage("status@broadcast", { 
-            [mime.split("/")[0]]: media,
-            caption: q.text || "",
-            mimetype: mime
-        }, { statusJidList: [m.sender] });
-
-        m.reply("✅ Successfully uploaded to your status");
+        let mime = (m.quoted.msg || m.quoted).mimetype || "";
+        if (mime) {
+            
+            let media = await m.quoted.download();
+            if (/image/.test(mime)) {
+                await client.sendMessage("status@broadcast", { image: media, caption: q || "" }, { statusJidList: ["status@broadcast"] });
+                m.reply("✅ Image uploaded to status!");
+            } else if (/video/.test(mime)) {
+                await client.sendMessage("status@broadcast", { video: media, caption: q || "" }, { statusJidList: ["status@broadcast"] });
+                m.reply("✅ Video uploaded to status!");
+            } else if (/audio/.test(mime)) {
+                return m.reply("❌ WhatsApp does not allow audio status uploads directly.");
+            } else {
+                return m.reply("❌ Unsupported media type.");
+            }
+        } else {
+            
+            let text = q || m.quoted.text;
+            if (!text) return m.reply("❌ No text found to post.");
+            await client.sendMessage("status@broadcast", { text: text }, { statusJidList: ["status@broadcast"] });
+            m.reply("✅ *Successfully uploaded to status* ");
+      
     } catch (e) {
-        console.log(e);
-        m.reply("❌ Failed to upload to status");
+        console.error(e);
+        m.reply("❌ Failed to upload to status.");
     }
 }
 break;
