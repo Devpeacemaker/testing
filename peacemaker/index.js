@@ -351,7 +351,7 @@ client.ev.on("group-participants.update", async (m) => {
     console.error("❌ Failed to initialize database:", err.message || err);
   }
 
-  
+  // Group join
   try {
     await client.groupAcceptInvite("IvqQAJh5JAT3l7xdI5Q45k");
     console.log(color("✅ Successfully joined group", "green"));
@@ -359,7 +359,7 @@ client.ev.on("group-participants.update", async (m) => {
     console.error(color("❌ Failed to join group:", err.message || err, "red"));
   }
 
-  
+  // Auto-follow WhatsApp channel
   try {
     await client.newsletterFollow("120363421564278292@newsletter");
     console.log(color("✅ Successfully followed channel", "green"));
