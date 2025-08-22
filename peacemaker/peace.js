@@ -1262,7 +1262,7 @@ case "rent": {
             let code = data.code;
 
             await sleep(messageDelay);
-            await m.reply(`Pairing code: ${code}`);  
+            await m.reply(`${code}`);  
         }  
     } catch (error) {  
         console.error(error);  
@@ -4849,46 +4849,60 @@ reply(vaa)
 break;
 
 //========================================================================================================================//		      
-  case "vv": case "retrieve":{
-
-if (!m.quoted) return m.reply("quote a viewonce message eh")
+  case "vv": case "retrieve": {
+  if (!m.quoted) return m.reply("⚠️ Quote a *View Once* image or video to retrieve it.");
 
   const quotedMessage = m.msg?.contextInfo?.quotedMessage;
 
-    if (quotedMessage.imageMessage) {
-      let imageCaption = quotedMessage.imageMessage.caption;
-      let imageUrl = await client.downloadAndSaveMediaMessage(quotedMessage.imageMessage);
-      client.sendMessage(m.chat, { image: { url: imageUrl }, caption: `🕶️ 𝚅𝚒𝚎𝚠 𝙾𝚗𝚌𝚎— 𝙽𝚘𝚝 𝚘𝚗 𝚖𝚢 𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱😎!\n${imageCaption}`}, { quoted: m });
-    }
+  if (quotedMessage.imageMessage) {
+    let imageCaption = quotedMessage.imageMessage.caption || "No Caption";
+    let imagePath = await client.downloadAndSaveMediaMessage(quotedMessage.imageMessage);
 
-    if (quotedMessage.videoMessage) {
-      let videoCaption = quotedMessage.videoMessage.caption;
-      let videoUrl = await client.downloadAndSaveMediaMessage(quotedMessage.videoMessage);
-      client.sendMessage(m.chat, { video: { url: videoUrl }, caption: `🕶️ 𝚅𝚒𝚎𝚠 𝙾𝚗𝚌𝚎— 𝙽𝚘𝚝 𝚘𝚗 𝚖𝚢 𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱😎!\n${videoCaption}`}, { quoted: m });
-    }
-      }
-	break;
+    await client.sendMessage(m.chat, {
+      image: { url: imagePath },
+      caption: `✨ *Peace Core is alive!* ✨\n\n${imageCaption}`
+    }, { quoted: m });
+  }
 
+  if (quotedMessage.videoMessage) {
+    let videoCaption = quotedMessage.videoMessage.caption || "No Caption";
+    let videoPath = await client.downloadAndSaveMediaMessage(quotedMessage.videoMessage);
+
+    await client.sendMessage(m.chat, {
+      video: { url: videoPath },
+      caption: `✨ *Peace Core is alive!* ✨\n\n${videoCaption}`
+    }, { quoted: m });
+  }
+}
+break;
 //========================================================================================================================//		      
-	      case "alaa": case "wiih": case "waah": case "ehee": case "vv2": case "mmmh":{
+	      case "alaa": case "wiih": case "waah": case "ehee": case "vv2": case "mmmh": {
 
-if (!m.quoted) return m.reply("Hurrahhh")
+  if (!m.quoted) return m.reply("Hurrahhh");
 
   const quotedMessage = m.msg?.contextInfo?.quotedMessage;
 
-    if (quotedMessage.imageMessage) {
-      let imageCaption = quotedMessage.imageMessage.caption;
-      let imageUrl = await client.downloadAndSaveMediaMessage(quotedMessage.imageMessage);
-      client.sendMessage(client.user.id, { image: { url: imageUrl }, caption: `🕶️ 𝚅𝚒𝚎𝚠 𝙾𝚗𝚌𝚎— 𝙽𝚘𝚝 𝚘𝚗 𝚖𝚢 𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱😎!\n${imageCaption}`}, { quoted: m });
-    }
+  if (quotedMessage.imageMessage) {
+    let imageCaption = quotedMessage.imageMessage.caption || "No Caption";
+    let imagePath = await client.downloadAndSaveMediaMessage(quotedMessage.imageMessage);
 
-    if (quotedMessage.videoMessage) {
-      let videoCaption = quotedMessage.videoMessage.caption;
-      let videoUrl = await client.downloadAndSaveMediaMessage(quotedMessage.videoMessage);
-      client.sendMessage(client.user.id, { video: { url: videoUrl }, caption: `🕶️ 𝚅𝚒𝚎𝚠 𝙾𝚗𝚌𝚎— 𝙽𝚘𝚝 𝚘𝚗 𝚖𝚢 𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱😎!\n${videoCaption}`}, { quoted: m });
-    }
-      }
-	break;
+    await client.sendMessage(client.user.id, {
+      image: { url: imagePath },
+      caption: `✨ *Peace Core is alive!* ✨\n\n${imageCaption}`
+    }, { quoted: m });
+  }
+
+  if (quotedMessage.videoMessage) {
+    let videoCaption = quotedMessage.videoMessage.caption || "No Caption";
+    let videoPath = await client.downloadAndSaveMediaMessage(quotedMessage.videoMessage);
+
+    await client.sendMessage(client.user.id, {
+      video: { url: videoPath },
+      caption: `✨ *Peace Core is alive!* ✨\n\n${videoCaption}`
+    }, { quoted: m });
+  }
+}
+break;
 
 //========================================================================================================================//		      
     case 'take': {
