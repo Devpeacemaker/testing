@@ -4370,64 +4370,261 @@ try {
 break;
 		      
 //========================================================================================================================//
-     case "fixtures": case "matches": {
- try {
-        let pl, laliga, bundesliga, serieA, ligue1;
-
-        const plData = await fetchJson('https://api.dreaded.site/api/matches/PL');
-        pl = plData.data;
-
-        const laligaData = await fetchJson('https://api.dreaded.site/api/matches/PD');
-        laliga = laligaData.data;
-
-        const bundesligaData = await fetchJson('https://api.dreaded.site/api/matches/BL1');
-        bundesliga = bundesligaData.data;
-
-        const serieAData = await fetchJson('https://api.dreaded.site/api/matches/SA');
-        serieA = serieAData.data;
-
-        const ligue1Data = await fetchJson('https://api.dreaded.site/api/matches/FR');
-        ligue1 = ligue1Data.data;
-
-        let message = `𝗧𝗼𝗱𝗮𝘆𝘀 𝗙𝗼𝗼𝘁𝗯𝗮𝗹𝗹 𝗙𝗶𝘅𝘁𝘂𝗿𝗲𝘀 ⚽\n\n`;
-
-        message += typeof pl === 'string' ? `🇬🇧 𝗣𝗿𝗲𝗺𝗶𝗲𝗿 𝗟𝗲𝗮𝗴𝘂𝗲:\n${pl}\n\n` : pl.length > 0 ? `🇬🇧 𝗣𝗿𝗲𝗺𝗶𝗲𝗿 𝗟𝗲𝗮𝗴𝘂𝗲:\n${pl.map(match => {
-            const { game, date, time } = match;
-            return `${game}\nDate: ${date}\nTime: ${time} (EAT)\n`;
-        }).join('\n')}\n\n` : "🇬🇧 𝗣𝗿𝗲𝗺𝗶𝗲𝗿 𝗟𝗲𝗮𝗴𝘂𝗲: No matches scheduled\n\n";
-
-        if (typeof laliga === 'string') {
-            message += `🇪🇸 𝗟𝗮 𝗟𝗶𝗴𝗮:\n${laliga}\n\n`;
-        } else {
-            message += laliga.length > 0 ? `🇪🇸 𝗟𝗮 𝗟𝗶𝗴𝗮:\n${laliga.map(match => {
-                const { game, date, time } = match;
-                return `${game}\nDate: ${date}\nTime: ${time} (EAT)\n`;
-            }).join('\n')}\n\n` : "🇪🇸 𝗟𝗮 𝗟𝗶𝗴𝗮: No matches scheduled\n\n";
-        }
-
-        message += typeof bundesliga === 'string' ? `🇩🇪 𝗕𝘂𝗻𝗱𝗲𝘀𝗹𝗶𝗴𝗮:\n${bundesliga}\n\n` : bundesliga.length > 0 ? `🇩🇪 𝗕𝘂𝗻𝗱𝗲𝘀𝗹𝗶𝗴𝗮:\n${bundesliga.map(match => {
-            const { game, date, time } = match;
-            return `${game}\nDate: ${date}\nTime: ${time} (EAT)\n`;
-        }).join('\n')}\n\n` : "🇩🇪 𝗕𝘂𝗻𝗱𝗲𝘀𝗹𝗶𝗴𝗮: No matches scheduled\n\n";
-
-        message += typeof serieA === 'string' ? `🇮🇹 𝗦𝗲𝗿𝗶𝗲 𝗔:\n${serieA}\n\n` : serieA.length > 0 ? `🇮🇹 𝗦𝗲𝗿𝗶𝗲 𝗔:\n${serieA.map(match => {
-            const { game, date, time } = match;
-            return `${game}\nDate: ${date}\nTime: ${time} (EAT)\n`;
-        }).join('\n')}\n\n` : "🇮🇹 𝗦𝗲𝗿𝗶𝗲 𝗔: No matches scheduled\n\n";
-
-        message += typeof ligue1 === 'string' ? `🇫🇷 𝗟𝗶𝗴𝘂𝗲 1:\n${ligue1}\n\n` : ligue1.length > 0 ? `🇫🇷 𝗟𝗶𝗴𝘂𝗲 1:\n${ligue1.map(match => {
-            const { game, date, time } = match;
-            return `${game}\nDate: ${date}\nTime: ${time} (EAT)\n`;
-        }).join('\n')}\n\n` : "🇫🇷 𝗟𝗶𝗴𝘂𝗲- 1: No matches scheduled\n\n";
-
-        message += "𝗧𝗶𝗺𝗲 𝗮𝗻𝗱 𝗗𝗮𝘁𝗲 𝗮𝗿𝗲 𝗶𝗻 𝗘𝗮𝘀𝘁 𝗔𝗳𝗿𝗶𝗰𝗮 𝗧𝗶𝗺𝗲𝘇𝗼𝗻𝗲 (𝗘𝗔𝗧).";
-
-        await m.reply(message);
-    } catch (error) {
-        m.reply('Something went wrong. Unable to fetch matches.' + error);
-    }
+     // Add these constants at the top
+const LEAGUE_CONFIG = {
+    PL: { code: 'PL', name: 'Premier League', emoji: '🇬🇧', command: 'pl' },
+    PD: { code: 'PD', name: 'La Liga', emoji: '🇪🇸', command: 'laliga' },
+    BL1: { code: 'BL1', name: 'Bundesliga', emoji: '🇩🇪', command: 'bundesliga' },
+    SA: { code: 'SA', name: 'Serie A', emoji: '🇮🇹', command: 'seriea' },
+    FL1: { code: 'FL1', name: 'Ligue 1', emoji: '🇫🇷', command: 'ligue1' }
 };
-break;		      
+
+const API_CONFIG = {
+    baseUrl: 'https://api.football-data.org/v4',
+    authToken: '9f66ad8d03384d4d98e8a6e631a60ee9'
+};
+
+// Helper function to fetch from football-data API
+async function fetchFootballData(endpoint) {
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
+            headers: {
+                'X-Auth-Token': API_CONFIG.authToken
+            }
+        });
+        return await response.json();
+    } catch (error) {
+        throw new Error(`API request failed: ${error.message}`);
+    }
+}
+
+// Format time to EAT
+function formatToEAT(utcDate) {
+    const date = new Date(utcDate);
+    return date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: 'Africa/Nairobi'
+    });
+}
+
+// Format date
+function formatDate(utcDate) {
+    const date = new Date(utcDate);
+    return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+// Premier League Commands
+case "pl":
+case "premierleague": {
+    try {
+        const league = LEAGUE_CONFIG.PL;
+        await handleLeagueCommand(m, league);
+    } catch (error) {
+        m.reply(`❌ Error fetching ${LEAGUE_CONFIG.PL.name} data: ${error.message}`);
+    }
+    break;
+}
+
+// La Liga Commands
+case "laliga":
+case "laliga": {
+    try {
+        const league = LEAGUE_CONFIG.PD;
+        await handleLeagueCommand(m, league);
+    } catch (error) {
+        m.reply(`❌ Error fetching ${LEAGUE_CONFIG.PD.name} data: ${error.message}`);
+    }
+    break;
+}
+
+// Bundesliga Commands
+case "bundesliga":
+case "bundes": {
+    try {
+        const league = LEAGUE_CONFIG.BL1;
+        await handleLeagueCommand(m, league);
+    } catch (error) {
+        m.reply(`❌ Error fetching ${LEAGUE_CONFIG.BL1.name} data: ${error.message}`);
+    }
+    break;
+}
+
+// Serie A Commands
+case "seriea":
+case "serie": {
+    try {
+        const league = LEAGUE_CONFIG.SA;
+        await handleLeagueCommand(m, league);
+    } catch (error) {
+        m.reply(`❌ Error fetching ${LEAGUE_CONFIG.SA.name} data: ${error.message}`);
+    }
+    break;
+}
+
+// Ligue 1 Commands
+case "ligue1":
+case "ligue": {
+    try {
+        const league = LEAGUE_CONFIG.FL1;
+        await handleLeagueCommand(m, league);
+    } catch (error) {
+        m.reply(`❌ Error fetching ${LEAGUE_CONFIG.FL1.name} data: ${error.message}`);
+    }
+    break;
+}
+
+// Main handler function for league commands
+async function handleLeagueCommand(m, league) {
+    // Check if there's a subcommand (matches, standings, etc.)
+    const args = m.body.trim().split(' ');
+    const subcommand = args[1]?.toLowerCase();
+
+    switch(subcommand) {
+        case 'matches':
+        case 'fixtures':
+            await sendLeagueMatches(m, league);
+            break;
+        
+        case 'standings':
+        case 'table':
+            await sendLeagueStandings(m, league);
+            break;
+        
+        case 'scorers':
+        case 'goals':
+            await sendLeagueScorers(m, league);
+            break;
+        
+        case 'upcoming':
+        case 'next':
+            await sendUpcomingMatches(m, league);
+            break;
+        
+        default:
+            // Default response with options
+            const helpMessage = `
+${league.emoji} *${league.name} Commands* ⚽
+
+Available commands:
+• !${league.command} matches - Today's matches
+• !${league.command} standings - Current table
+• !${league.command} scorers - Top goal scorers
+• !${league.command} upcoming - Next matches
+
+Example: !${league.command} standings
+            `;
+            await m.reply(helpMessage);
+    }
+}
+
+// Function to send league matches
+async function sendLeagueMatches(m, league) {
+    const data = await fetchFootballData(`/competitions/${league.code}/matches?status=SCHEDULED`);
+    
+    const today = new Date().toISOString().split('T')[0];
+    const todayMatches = data.matches.filter(match => 
+        match.utcDate.startsWith(today)
+    );
+
+    let message = `${league.emoji} *${league.name} - Today's Matches* ⚽\n\n`;
+
+    if (todayMatches.length === 0) {
+        message += "No matches scheduled for today\n";
+    } else {
+        todayMatches.forEach(match => {
+            message += `⚽ *${match.homeTeam.shortName} vs ${match.awayTeam.shortName}*\n`;
+            message += `🕒 ${formatToEAT(match.utcDate)} (EAT)\n`;
+            message += `🏟️ ${match.venue || 'Stadium TBA'}\n`;
+            message += `📊 Matchday: ${match.matchday}\n\n`;
+        });
+    }
+
+    message += `_Time in East Africa Time (EAT)_`;
+    await m.reply(message);
+}
+
+// Function to send league standings
+async function sendLeagueStandings(m, league) {
+    const data = await fetchFootballData(`/competitions/${league.code}/standings`);
+    const table = data.standings[0].table;
+
+    let message = `${league.emoji} *${league.name} Standings* 🏆\n\n`;
+    
+    message += `┌───┬─────────────────┬────┬────┬────┬────┬────┐\n`;
+    message += `│ # │ Team            │ P  │ W  │ D  │ L  │ Pts│\n`;
+    message += `├───┼─────────────────┼────┼────┼────┼────┼────┤\n`;
+
+    table.forEach(team => {
+        const position = team.position.toString().padEnd(2);
+        const teamName = team.team.shortName.padEnd(15);
+        const played = team.playedGames.toString().padEnd(3);
+        const won = team.won.toString().padEnd(3);
+        const draw = team.draw.toString().padEnd(3);
+        const lost = team.lost.toString().padEnd(3);
+        const points = team.points.toString().padEnd(3);
+        
+        message += `│ ${position} │ ${teamName} │ ${played}│ ${won}│ ${draw}│ ${lost}│ ${points}│\n`;
+    });
+
+    message += `└───┴─────────────────┴────┴────┴────┴────┴────┘\n\n`;
+    
+    message += `📋 *Current Matchday:* ${data.season.currentMatchday}\n`;
+    message += `🔄 *Last Updated:* ${new Date().toLocaleDateString()}\n`;
+    message += `\nUse !${league.command} matches for today's fixtures`;
+
+    await m.reply(message);
+}
+
+// Function to send top scorers
+async function sendLeagueScorers(m, league) {
+    const data = await fetchFootballData(`/competitions/${league.code}/scorers`);
+    const scorers = data.scorers.slice(0, 10);
+
+    let message = `${league.emoji} *${league.name} Top Scorers* ⚽\n\n`;
+
+    scorers.forEach((player, index) => {
+        const rank = index + 1;
+        const medal = rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : `${rank}️⃣`;
+        
+        message += `${medal} *${player.player.name}* (${player.team.shortName})\n`;
+        message += `   ⚽ Goals: ${player.goals} | 🎯 Assists: ${player.assists || 0}\n`;
+        message += `   📊 Games: ${player.playedMatches} | ⏱️ Minutes: ${player.minutesPlayed}\n`;
+        
+        if (player.penalties > 0) {
+            message += `   ⚖️ Penalties: ${player.penalties}\n`;
+        }
+        message += '\n';
+    });
+
+    await m.reply(message);
+}
+
+// Function to send upcoming matches
+async function sendUpcomingMatches(m, league) {
+    const data = await fetchFootballData(`/competitions/${league.code}/matches?status=SCHEDULED`);
+    const upcomingMatches = data.matches.slice(0, 8);
+
+    let message = `${league.emoji} *${league.name} - Upcoming Matches* 🔜\n\n`;
+
+    if (upcomingMatches.length === 0) {
+        message += "No upcoming matches scheduled\n";
+    } else {
+        upcomingMatches.forEach(match => {
+            message += `▫️ *${match.homeTeam.shortName} vs ${match.awayTeam.shortName}*\n`;
+            message += `   📆 ${formatDate(match.utcDate)} | 🕒 ${formatToEAT(match.utcDate)} (EAT)\n`;
+            message += `   🏆 Matchday ${match.matchday}\n`;
+            message += `   🏟️ ${match.venue || 'TBA'}\n\n`;
+        });
+    }
+
+    message += `_Time in East Africa Time (EAT)_`;
+    await m.reply(message);
+}
 		      
 //========================================================================================================================//		      
 case 'sc':
