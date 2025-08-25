@@ -5648,50 +5648,24 @@ case "listactive": {
             }
             break;
 //========================================================================================================================//
-case "addsudo": {
-  let { isOwner, bypass } = await checkRoles(senderNumber);
-  if (!isOwner && !bypass) return reply("❌ Only the owner can add sudo users.");
-  if (!text) return reply("⚠️ Usage: .addsudo <number>");
+case "addsudo":
+  if (!isOwner) return reply("Only owner can add sudo.");
+  if (!args[0]) return reply("Please provide number.");
+  await addSudo(args[0].replace(/[^0-9]/g, "")); 
+  reply(`✅ ${args[0]} added as sudo.`);
+  break;
 
-  let number = text.replace(/[^0-9]/g, "");
-  if (!number) return reply("⚠️ Provide a valid number.");
-  
-  // Prevent removing the permanent owner
-  if (number === OWNER_NUMBER) return reply("❌ Cannot modify permanent owner.");
+case "remsudo":
+  if (!isOwner) return reply("Only owner can remove sudo.");
+  if (!args[0]) return reply("Please provide number.");
+  await removeSudo(args[0].replace(/[^0-9]/g, "")); 
+  reply(`✅ ${args[0]} removed from sudos.`);
+  break;
 
-  let success = await addSudo(number);
-  reply(success ? `✅ *${number}* added as sudo.` : "❌ Failed to add sudo.");
-}
-break;
-
-case "delsudo": {
-  let { isOwner, bypass } = await checkRoles(senderNumber);
-  if (!isOwner && !bypass) return reply("❌ Only the owner can remove sudo users.");
-  if (!text) return reply("⚠️ Usage: .delsudo <number>");
-
-  let number = text.replace(/[^0-9]/g, "");
-  if (!number) return reply("⚠️ Provide a valid number.");
-  
-  // Prevent removing the permanent owner
-  if (number === OWNER_NUMBER) return reply("❌ Cannot remove permanent owner.");
-
-  let success = await removeSudo(number);
-  reply(success ? `✅ *${number}* removed from sudo.` : "❌ Failed to remove sudo.");
-}
-break;
-
-case "listsudo": {
-  let sudoList = await getSudo();
-  if (sudoList.length === 0) return reply("⚠️ No sudo users found.");
-  
-  let sudoText = "👑 *Sudo Users:*\n\n";
-  sudoList.forEach((n, i) => {
-    sudoText += `${i+1}. ${n}${n === OWNER_NUMBER ? " 👑 (Permanent Owner)" : ""}\n`;
-  });
-  
-  reply(sudoText);
-}
-break;
+case "listsudo":
+  const sudos = await listSudo();
+  reply("👑 Sudo Users:\n" + sudos.map((n,i)=> `${i+1}. ${n}`).join("\n"));
+  break;
 //========================================================================================================================//        
         default: {
           if (cmd && budy.toLowerCase() != undefined) {
