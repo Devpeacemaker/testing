@@ -5648,24 +5648,107 @@ case "listactive": {
             }
             break;
 //========================================================================================================================//
-case "addsudo":
-  if (!isOwner) return reply("Only owner can add sudo.");
-  if (!args[0]) return reply("Please provide number.");
-  await addSudo(args[0].replace(/[^0-9]/g, "")); 
-  reply(`✅ ${args[0]} added as sudo.`);
-  break;
+const { addSudoOwner, removeSudoOwner, getSudoOwners, isSudoOwner } = require('./config');
 
-case "remsudo":
-  if (!isOwner) return reply("Only owner can remove sudo.");
-  if (!args[0]) return reply("Please provide number.");
-  await removeSudo(args[0].replace(/[^0-9]/g, "")); 
-  reply(`✅ ${args[0]} removed from sudos.`);
-  break;
+async function handleSudoCommand(message, user) {
+  const args = message.body.split(' ');
+  const command = args[0].toLowerCase();
+  
+  // Remove the prefix and get the actual command
+  const actualCommand = command.replace(/[^a-zA-Z]/g, '');
+  
+  const targetUser = args[1];
 
-case "listsudo":
-  const sudos = await listSudo();
-  reply("👑 Sudo Users:\n" + sudos.map((n,i)=> `${i+1}. ${n}`).join("\n"));
-  break;
+  // Check if user is authorized to use sudo commands
+  if (!user.isOwner && !(await isSudoOwner(user.id))) {
+    return message.reply('❌ You are not authorized to use sudo commands.');
+  }
+
+  switch (actualCommand) {
+    case 'addsudo':
+      if (!targetUser) {
+        return message.reply('❌ Please provide a user ID to add. Usage: .addsudo <user_id>');
+      }
+      
+      // Validate user ID format (adjust based on your platform)
+      if (!/^\d+$/.test(targetUser)) {
+        return message.reply('❌ Invalid user ID format. Please provide a valid numeric user ID.');
+      }
+      
+      const added = await addSudoOwner(targetUser, user.id);
+      if (added) {
+        message.reply(`✅ User ${targetUser} has been added as sudo owner.`);
+      } else {
+        message.reply('❌ Failed to add user as sudo owner. They might already be added.');
+      }
+      break;
+
+    case 'removesudo':
+      if (!targetUser) {
+        return message.reply('❌ Please provide a user ID to remove. Usage: .removesudo <user_id>');
+      }
+      
+      if (!/^\d+$/.test(targetUser)) {
+        return message.reply('❌ Invalid user ID format. Please provide a valid numeric user ID.');
+      }
+      
+      const removed = await removeSudoOwner(targetUser);
+      if (removed) {
+        message.reply(`✅ User ${targetUser} has been removed from sudo owners.`);
+      } else {
+        message.reply('❌ User not found in sudo owners list.');
+      }
+      break;
+
+    case 'listsudo':
+      const sudoOwners = await getSudoOwners();
+      if (sudoOwners.length === 0) {
+        return message.reply('📝 No sudo owners found.');
+      }
+      
+      let listMessage = '📋 *Sudo Owners List:*\n\n';
+      sudoOwners.forEach((owner, index) => {
+        listMessage += `${index + 1}. User ID: ${owner.user_id}\n`;
+        listMessage += `   Added by: ${owner.added_by}\n`;
+        listMessage += `   Added at: ${new Date(owner.added_at).toLocaleString()}\n\n`;
+      });
+      
+      message.reply(listMessage);
+      break;
+
+    case 'checksudo':
+      if (!targetUser) {
+        return message.reply('❌ Please provide a user ID to check. Usage: .checksudo <user_id>');
+      }
+      
+      if (!/^\d+$/.test(targetUser)) {
+        return message.reply('❌ Invalid user ID format. Please provide a valid numeric user ID.');
+      }
+      
+      const isSudo = await isSudoOwner(targetUser);
+      message.reply(isSudo ? 
+        `✅ User ${targetUser} is a sudo owner.` : 
+        `❌ User ${targetUser} is not a sudo owner.`
+      );
+      break;
+
+    default:
+      const helpMessage = `🔧 *Sudo Management Commands:*\n\n` +
+        `• *.addsudo <user_id>* - Add a sudo owner\n` +
+        `• *.removesudo <user_id>* - Remove a sudo owner\n` +
+        `• *.listsudo* - Show all sudo owners\n` +
+        `• *.checksudo <user_id>* - Check if user is sudo owner\n` +
+        `\n📝 *Note:* Only bot owner and sudo owners can use these commands.`;
+      
+      message.reply(helpMessage);
+      break;
+  }
+}
+
+// Export the function
+module.exports = {
+  handleSudoCommand
+};
 //========================================================================================================================//        
         default: {
           if (cmd && budy.toLowerCase() != undefined) {
