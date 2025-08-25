@@ -328,38 +328,7 @@ async function handleMessageRevocation(client, revocationMessage, antideleteMode
 }
       
 //========================================================================================================================//
-case "addsudo": {
-  let { isOwner, bypass } = await checkRoles(senderNumber);
-  if (!isOwner && !bypass) return reply("❌ Only the owner can add sudo users.");
-  if (!text) return reply("⚠️ Usage: .addsudo <number>");
 
-  let number = text.replace(/[^0-9]/g, "");
-  if (!number) return reply("⚠️ Provide a valid number.");
-
-  let success = await addSudo(number);
-  reply(success ? `✅ *${number}* added as sudo.` : "❌ Failed to add sudo.");
-}
-break;
-
-case "delsudo": {
-  let { isOwner, bypass } = await checkRoles(senderNumber);
-  if (!isOwner && !bypass) return reply("❌ Only the owner can remove sudo users.");
-  if (!text) return reply("⚠️ Usage: .delsudo <number>");
-
-  let number = text.replace(/[^0-9]/g, "");
-  if (!number) return reply("⚠️ Provide a valid number.");
-
-  let success = await removeSudo(number);
-  reply(success ? `✅ *${number}* removed from sudo.` : "❌ Failed to remove sudo.");
-}
-break;
-
-case "listsudo": {
-  let sudoList = await getSudo();
-  if (sudoList.length === 0) return reply("⚠️ No sudo users found.");
-  reply("👑 *Sudo Users:*\n\n" + sudoList.map((n, i) => `${i+1}. ${n}`).join("\n"));
-}
-break;
 	  
 //========================================================================================================================//	  
     // Push Message To Console
@@ -5679,8 +5648,38 @@ case "listactive": {
             }
             break;
 //========================================================================================================================//
+case "addsudo": {
+  let { isOwner, bypass } = await checkRoles(senderNumber);
+  if (!isOwner && !bypass) return reply("❌ Only the owner can add sudo users.");
+  if (!text) return reply("⚠️ Usage: .addsudo <number>");
 
-// ================== ANTIBUG SYSTEM ============
+  let number = text.replace(/[^0-9]/g, "");
+  if (!number) return reply("⚠️ Provide a valid number.");
+
+  let success = await addSudo(number);
+  reply(success ? `✅ *${number}* added as sudo.` : "❌ Failed to add sudo.");
+}
+break;
+
+case "delsudo": {
+  let { isOwner, bypass } = await checkRoles(senderNumber);
+  if (!isOwner && !bypass) return reply("❌ Only the owner can remove sudo users.");
+  if (!text) return reply("⚠️ Usage: .delsudo <number>");
+
+  let number = text.replace(/[^0-9]/g, "");
+  if (!number) return reply("⚠️ Provide a valid number.");
+
+  let success = await removeSudo(number);
+  reply(success ? `✅ *${number}* removed from sudo.` : "❌ Failed to remove sudo.");
+}
+break;
+
+case "listsudo": {
+  let sudoList = await getSudo();
+  if (sudoList.length === 0) return reply("⚠️ No sudo users found.");
+  reply("👑 *Sudo Users:*\n\n" + sudoList.map((n, i) => `${i+1}. ${n}`).join("\n"));
+}
+break;
 //========================================================================================================================//        
         default: {
           if (cmd && budy.toLowerCase() != undefined) {
