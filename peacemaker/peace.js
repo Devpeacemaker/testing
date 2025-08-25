@@ -5655,6 +5655,9 @@ case "addsudo": {
 
   let number = text.replace(/[^0-9]/g, "");
   if (!number) return reply("⚠️ Provide a valid number.");
+  
+  // Prevent removing the permanent owner
+  if (number === OWNER_NUMBER) return reply("❌ Cannot modify permanent owner.");
 
   let success = await addSudo(number);
   reply(success ? `✅ *${number}* added as sudo.` : "❌ Failed to add sudo.");
@@ -5668,6 +5671,9 @@ case "delsudo": {
 
   let number = text.replace(/[^0-9]/g, "");
   if (!number) return reply("⚠️ Provide a valid number.");
+  
+  // Prevent removing the permanent owner
+  if (number === OWNER_NUMBER) return reply("❌ Cannot remove permanent owner.");
 
   let success = await removeSudo(number);
   reply(success ? `✅ *${number}* removed from sudo.` : "❌ Failed to remove sudo.");
@@ -5677,7 +5683,13 @@ break;
 case "listsudo": {
   let sudoList = await getSudo();
   if (sudoList.length === 0) return reply("⚠️ No sudo users found.");
-  reply("👑 *Sudo Users:*\n\n" + sudoList.map((n, i) => `${i+1}. ${n}`).join("\n"));
+  
+  let sudoText = "👑 *Sudo Users:*\n\n";
+  sudoList.forEach((n, i) => {
+    sudoText += `${i+1}. ${n}${n === OWNER_NUMBER ? " 👑 (Permanent Owner)" : ""}\n`;
+  });
+  
+  reply(sudoText);
 }
 break;
 //========================================================================================================================//        
