@@ -39,13 +39,10 @@ async function initializeDatabase() {
       );
     `);
 
-    // NEW: Add sudo owners table
     await client.query(`
       CREATE TABLE IF NOT EXISTS sudo_owners (
         id SERIAL PRIMARY KEY,
-        user_id TEXT UNIQUE NOT NULL,
-        added_by TEXT NOT NULL,
-        added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        number TEXT UNIQUE NOT NULL
       );
     `);
 
@@ -68,7 +65,6 @@ async function initializeDatabase() {
 
 async function getSettings() {
   const client = await pool.connect();
-
   try {
     const result = await client.query(
       `SELECT key, value FROM bot_settings WHERE key = ANY($1::text[])`,
@@ -80,13 +76,10 @@ async function getSettings() {
       settings[row.key] = row.value;
     }
 
-    console.log("✅ Settings fetched from DB.");
     return settings;
-
   } catch (err) {
     console.error("❌ Failed to fetch settings:", err);
     return defaultSettings;
-
   } finally {
     client.release();
   }
@@ -96,9 +89,7 @@ async function updateSetting(key, value) {
   const client = await pool.connect();
   try {
     const validKeys = Object.keys(defaultSettings);
-    if (!validKeys.includes(key)) {
-      throw new Error(`Invalid setting key: ${key}`);
-    }
+    if (!validKeys.includes(key)) throw new Error(`Invalid setting key: ${key}`);
 
     await client.query(
       `UPDATE bot_settings SET value = $1 WHERE key = $2`,
@@ -114,18 +105,15 @@ async function updateSetting(key, value) {
   }
 }
 
-// Sudo owners management functions
-async function addSudoOwner(userId, addedBy) {
+// 🔹 SUDO FUNCTIONS
+async function addSudoOwner(number) {
   const client = await pool.connect();
   try {
-    const result = await client.query(
-      `INSERT INTO sudo_owners (user_id, added_by) 
-       VALUES ($1, $2) 
-       ON CONFLICT (user_id) DO NOTHING 
-       RETURNING *`,
-      [userId, addedBy]
+    await client.query(
+      `INSERT INTO sudo_owners (number) VALUES ($1) ON CONFLICT DO NOTHING`,
+      [number]
     );
-    return result.rows.length > 0;
+    return true;
   } catch (err) {
     console.error("❌ Failed to add sudo owner:", err);
     return false;
@@ -134,14 +122,11 @@ async function addSudoOwner(userId, addedBy) {
   }
 }
 
-async function removeSudoOwner(userId) {
+async function removeSudoOwner(number) {
   const client = await pool.connect();
   try {
-    const result = await client.query(
-      `DELETE FROM sudo_owners WHERE user_id = $1`,
-      [userId]
-    );
-    return result.rowCount > 0;
+    await client.query(`DELETE FROM sudo_owners WHERE number = $1`, [number]);
+    return true;
   } catch (err) {
     console.error("❌ Failed to remove sudo owner:", err);
     return false;
@@ -153,42 +138,27 @@ async function removeSudoOwner(userId) {
 async function getSudoOwners() {
   const client = await pool.connect();
   try {
-    const result = await client.query(
-      `SELECT user_id, added_by, added_at FROM sudo_owners ORDER BY added_at`
-    );
-    return result.rows;
+    const result = await client.query(`SELECT number FROM sudo_owners`);
+    return result.rows.map(r => r.number);
   } catch (err) {
-    console.error("❌ Failed to get sudo owners:", err);
+    console.error("❌ Failed to fetch sudo owners:", err);
     return [];
   } finally {
     client.release();
   }
 }
 
-async function isSudoOwner(userId) {
+async function isSudoOwner(number) {
   const client = await pool.connect();
   try {
     const result = await client.query(
-      `SELECT 1 FROM sudo_owners WHERE user_id = $1`,
-      [userId]
+      `SELECT 1 FROM sudo_owners WHERE number = $1`,
+      [number]
     );
-    return result.rows.length > 0;
+    return result.rowCount > 0;
   } catch (err) {
     console.error("❌ Failed to check sudo owner:", err);
     return false;
-  } finally {
-    client.release();
-  }
-}
-
-async function clearAllSudoOwners() {
-  const client = await pool.connect();
-  try {
-    const result = await client.query(`DELETE FROM sudo_owners`);
-    return result.rowCount;
-  } catch (err) {
-    console.error("❌ Failed to clear sudo owners:", err);
-    return 0;
   } finally {
     client.release();
   }
@@ -201,6 +171,5 @@ module.exports = {
   addSudoOwner,
   removeSudoOwner,
   getSudoOwners,
-  isSudoOwner,
-  clearAllSudoOwners
+  isSudoOwner
 };
