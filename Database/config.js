@@ -5,9 +5,6 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// constant owner (permanent sudo/bypass)
-const OWNER_NUMBER = "254752818245";
-
 const defaultSettings = {
   antilink: 'on',
   antilinkall: 'off',
@@ -29,12 +26,15 @@ const defaultSettings = {
   antiedit: 'private'
 };
 
+// =========================
+// 📡 DATABASE INITIALIZER
+// =========================
 async function initializeDatabase() {
   const client = await pool.connect();
   console.log("📡 Connecting to PostgreSQL...");
 
   try {
-    // table for bot settings
+    // settings table
     await client.query(`
       CREATE TABLE IF NOT EXISTS bot_settings (
         id SERIAL PRIMARY KEY,
@@ -43,7 +43,7 @@ async function initializeDatabase() {
       );
     `);
 
-    // table for sudo users
+    // sudo users table
     await client.query(`
       CREATE TABLE IF NOT EXISTS sudo_users (
         id SERIAL PRIMARY KEY,
@@ -51,7 +51,7 @@ async function initializeDatabase() {
       );
     `);
 
-    // insert default settings
+    // insert default settings if missing
     for (const [key, value] of Object.entries(defaultSettings)) {
       await client.query(
         `INSERT INTO bot_settings (key, value)
@@ -69,6 +69,9 @@ async function initializeDatabase() {
   }
 }
 
+// =========================
+// ⚙️ SETTINGS FUNCTIONS
+// =========================
 async function getSettings() {
   const client = await pool.connect();
   try {
@@ -76,19 +79,12 @@ async function getSettings() {
       `SELECT key, value FROM bot_settings WHERE key = ANY($1::text[])`,
       [Object.keys(defaultSettings)]
     );
-
     const settings = {};
-    for (const row of result.rows) {
-      settings[row.key] = row.value;
-    }
-
-    console.log("✅ Settings fetched from DB.");
+    for (const row of result.rows) settings[row.key] = row.value;
     return settings;
-
   } catch (err) {
     console.error("❌ Failed to fetch settings:", err);
     return defaultSettings;
-
   } finally {
     client.release();
   }
@@ -98,15 +94,11 @@ async function updateSetting(key, value) {
   const client = await pool.connect();
   try {
     const validKeys = Object.keys(defaultSettings);
-    if (!validKeys.includes(key)) {
-      throw new Error(`Invalid setting key: ${key}`);
-    }
-
+    if (!validKeys.includes(key)) throw new Error(`Invalid setting key: ${key}`);
     await client.query(
       `UPDATE bot_settings SET value = $1 WHERE key = $2`,
       [value, key]
     );
-
     return true;
   } catch (err) {
     console.error("❌ Failed to update setting:", err.message || err);
@@ -116,17 +108,20 @@ async function updateSetting(key, value) {
   }
 }
 
-// ========== SUDO HELPERS ==========
+// =========================
+// 👑 SUDO FUNCTIONS
+// =========================
 async function addSudo(number) {
   const client = await pool.connect();
   try {
     await client.query(
-      `INSERT INTO sudo_users (number) VALUES ($1) ON CONFLICT (number) DO NOTHING;`,
+      `INSERT INTO sudo_users (number) VALUES ($1)
+       ON CONFLICT (number) DO NOTHING;`,
       [number]
     );
     return true;
   } catch (err) {
-    console.error("❌ Failed to add sudo:", err);
+    console.error("❌ Failed to add sudo:", err.message || err);
     return false;
   } finally {
     client.release();
@@ -139,52 +134,48 @@ async function removeSudo(number) {
     await client.query(`DELETE FROM sudo_users WHERE number = $1`, [number]);
     return true;
   } catch (err) {
-    console.error("❌ Failed to remove sudo:", err);
+    console.error("❌ Failed to remove sudo:", err.message || err);
     return false;
   } finally {
     client.release();
   }
 }
 
-async function getSudo() {
+async function listSudo() {
   const client = await pool.connect();
   try {
-    const res = await client.query(`SELECT number FROM sudo_users`);
-    let dbSudo = res.rows.map(r => r.number);
-
-    // always include permanent owner
-    if (!dbSudo.includes(OWNER_NUMBER)) dbSudo.unshift(OWNER_NUMBER);
-
-    return dbSudo;
+    const result = await client.query(`SELECT number FROM sudo_users`);
+    return result.rows.map(row => row.number);
   } catch (err) {
-    console.error("❌ Failed to fetch sudo:", err);
-    return [OWNER_NUMBER];
+    console.error("❌ Failed to list sudos:", err.message || err);
+    return [];
   } finally {
     client.release();
   }
 }
 
-// role checker
-async function checkRoles(sender) {
-  // permanent owner bypass
-  if (sender === OWNER_NUMBER) {
-    return { isOwner: true, isSudo: true, bypass: true };
+async function isSudo(number) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT 1 FROM sudo_users WHERE number = $1 LIMIT 1`,
+      [number]
+    );
+    return result.rowCount > 0;
+  } catch (err) {
+    console.error("❌ Failed to check sudo:", err.message || err);
+    return false;
+  } finally {
+    client.release();
   }
-  const sudoList = await getSudo();
-  return {
-    isOwner: false,
-    isSudo: sudoList.includes(sender),
-    bypass: false
-  };
 }
 
 module.exports = {
-  OWNER_NUMBER,
   initializeDatabase,
   getSettings,
   updateSetting,
   addSudo,
   removeSudo,
-  getSudo,
-  checkRoles
+  listSudo,
+  isSudo
 };
