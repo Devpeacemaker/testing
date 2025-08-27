@@ -544,13 +544,18 @@ function formatSpeed(ms) {
             return DateTime.now().setZone('Africa/Nairobi').toLocaleString(DateTime.TIME_SIMPLE);
         };
 //========================================================================================================================//	
-if (badword === 'on' && isBotAdmin && !isAdmin && body && (new RegExp('\\b' + badwords.join('\\b|\\b') + '\\b')).test(body.toLowerCase())) {
-	
-       reply("Hey niggah.\n\nMy owner hates usage of bad words in my presence!")
-                 
-     client.groupParticipantsUpdate(from, [sender], 'remove')
-            
-          }
+const badwords = await getBadwords();
+
+if (
+  badword === 'on' &&
+  isBotAdmin &&
+  !isAdmin &&
+  body &&
+  (new RegExp('\\b' + badwords.join('\\b|\\b') + '\\b')).test(body.toLowerCase())
+) {
+  reply("Hey niggah.\n\nMy owner hates usage of bad words in my presence!");
+  client.groupParticipantsUpdate(from, [sender], 'remove');
+}
 //========================================================================================================================//	  
     if (antilink === 'on' && body.includes('chat.whatsapp.com') && !Owner && isBotAdmin && !isAdmin && m.isGroup) { 
   
@@ -1076,17 +1081,28 @@ case "wapresence": {
 }
 break;
 
-case "badword": {
-	if(!Owner) throw NotOwner;
-  const settings = await getSettings();
-  const current = settings.badword;
-  if (!text) return reply(`😈 Badword is currently *${current.toUpperCase()}*`);
-  if (!["on", "off"].includes(text)) return reply("Usage: badword on/off");
-  if (text === current) return reply(`✅ Badword is already *${text.toUpperCase()}*`);
-  await updateSetting("badword", text);
-  reply(`✅ Badword has been turned *${text.toUpperCase()}*`);
-}
-break;	
+case "addbadword":
+  if (!isPrivileged) return reply("Only privileged users can add badwords.");
+  if (!args[0]) return reply("Usage: addbadword <word>");
+  await addBadword(args[0]);
+  reply(`✅ '${args[0]}' added to badword list.`);
+  break;
+
+case "delbadword":
+  if (!isPrivileged) return reply("Only privileged users can remove badwords.");
+  if (!args[0]) return reply("Usage: delbadword <word>");
+  await removeBadword(args[0]);
+  reply(`🗑️ '${args[0]}' removed from badword list.`);
+  break;
+
+case "listbadword":
+  if (!isPrivileged) return reply("Only privileged users can see badword list.");
+  const words = await getBadwords();
+  if (words.length === 0) return reply("⚡ No badwords set.");
+  let bwText = "😈 *Badword List:*\n";
+  words.forEach((w, i) => bwText += `\n${i + 1}. ${w}`);
+  reply(bwText);
+  break;
 		
 case "anticall": {
 	if(!Owner) throw NotOwner;
