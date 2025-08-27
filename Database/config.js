@@ -31,6 +31,7 @@ async function initializeDatabase() {
   console.log("📡 Connecting to PostgreSQL...");
 
   try {
+    // 🔹 Bot settings
     await client.query(`
       CREATE TABLE IF NOT EXISTS bot_settings (
         id SERIAL PRIMARY KEY,
@@ -39,6 +40,7 @@ async function initializeDatabase() {
       );
     `);
 
+    // 🔹 Sudo owners
     await client.query(`
       CREATE TABLE IF NOT EXISTS sudo_owners (
         id SERIAL PRIMARY KEY,
@@ -46,6 +48,15 @@ async function initializeDatabase() {
       );
     `);
 
+    // 🔹 Badwords
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS badwords (
+        id SERIAL PRIMARY KEY,
+        word TEXT UNIQUE NOT NULL
+      );
+    `);
+
+    // Insert default settings if not exist
     for (const [key, value] of Object.entries(defaultSettings)) {
       await client.query(
         `INSERT INTO bot_settings (key, value)
@@ -63,6 +74,7 @@ async function initializeDatabase() {
   }
 }
 
+// ================= SETTINGS =================
 async function getSettings() {
   const client = await pool.connect();
   try {
@@ -105,7 +117,7 @@ async function updateSetting(key, value) {
   }
 }
 
-// 🔹 SUDO FUNCTIONS
+// ================= SUDO FUNCTIONS =================
 async function addSudoOwner(number) {
   const client = await pool.connect();
   try {
@@ -164,6 +176,49 @@ async function isSudoOwner(number) {
   }
 }
 
+// ================= BADWORD FUNCTIONS =================
+async function addBadword(word) {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO badwords (word) VALUES ($1) ON CONFLICT DO NOTHING`,
+      [word.toLowerCase()]
+    );
+    return true;
+  } catch (err) {
+    console.error("❌ Failed to add badword:", err);
+    return false;
+  } finally {
+    client.release();
+  }
+}
+
+async function removeBadword(word) {
+  const client = await pool.connect();
+  try {
+    await client.query(`DELETE FROM badwords WHERE word = $1`, [word.toLowerCase()]);
+    return true;
+  } catch (err) {
+    console.error("❌ Failed to remove badword:", err);
+    return false;
+  } finally {
+    client.release();
+  }
+}
+
+async function getBadwords() {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`SELECT word FROM badwords`);
+    return result.rows.map(r => r.word);
+  } catch (err) {
+    console.error("❌ Failed to fetch badwords:", err);
+    return [];
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   initializeDatabase,
   getSettings,
@@ -171,5 +226,8 @@ module.exports = {
   addSudoOwner,
   removeSudoOwner,
   getSudoOwners,
-  isSudoOwner
+  isSudoOwner,
+  addBadword,
+  removeBadword,
+  getBadwords
 };
