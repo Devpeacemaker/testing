@@ -74,7 +74,7 @@ const {
   removeSudoOwner, 
   getSudoOwners, 
   isSudoOwner 
-} = require('../database/config');  
+} = require('../Database/config');  
 //========================================================================================================================//	  
 const Heroku = require("heroku-client");  
 const command = body.replace(prefix, "").trim().split(/ +/).shift().toLowerCase();
