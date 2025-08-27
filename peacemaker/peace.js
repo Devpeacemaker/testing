@@ -123,7 +123,7 @@ const dev = "254752818245"; // Peacemaker's number
     const mime = (quoted.msg || quoted).mimetype || "";
     const qmsg = (quoted.msg || quoted);
     const cmd = body.startsWith(prefix);
-    const badwords = bad.split(",");
+   
 //========================================================================================================================//		      
 //========================================================================================================================//	      
     const groupMetadata = m.isGroup ? await client.groupMetadata(m.chat).catch((e) => { }) : "";  
