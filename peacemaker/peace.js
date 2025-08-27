@@ -73,7 +73,10 @@ const {
   addSudoOwner, 
   removeSudoOwner, 
   getSudoOwners, 
-  isSudoOwner 
+  isSudoOwner,
+  addBadword,     // ✅ new
+  removeBadword,  // ✅ new
+  getBadwords     // ✅ new
 } = require('../Database/config');  
 //========================================================================================================================//	  
 const Heroku = require("heroku-client");  
