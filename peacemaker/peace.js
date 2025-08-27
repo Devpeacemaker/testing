@@ -69,8 +69,14 @@ console.log(prefix);
     var budy = typeof m.text == "string" ? m.text : "";
     var msgR = m.message.extendedTextMessage?.contextInfo?.quotedMessage;  
 //========================================================================================================================//
+const { 
+  addSudoOwner, 
+  removeSudoOwner, 
+  getSudoOwners, 
+  isSudoOwner 
+} = require('./config');   
 //========================================================================================================================//	  
-    const Heroku = require("heroku-client");  
+const Heroku = require("heroku-client");  
 const command = body.replace(prefix, "").trim().split(/ +/).shift().toLowerCase();
 const args = body.trim().split(/ +/).slice(1);
 const pushname = m.pushName || "No Name";
