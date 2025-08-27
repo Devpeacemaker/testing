@@ -105,6 +105,9 @@ const isSudo = await isSudoOwner(senderNumber);
 // 🔑 Privileged = owner OR sudo
 const isPrivileged = isOwner || isSudo;
 
+// Update the dev reference if needed (replace with actual dev number)
+const dev = "254752818245"; // Peacemaker's number
+
 
 
 
@@ -365,7 +368,8 @@ if (wapresence === 'online') {
              client.sendPresenceUpdate('unavailable', Grace);
     }
 //========================================================================================================================//    
-if (cmd && mode === 'private' && !itsMe && !Owner && !isSudo && m.sender !== dev) {
+// Update the private mode check to include sudo users
+if (cmd && mode === 'private' && !itsMe && !isPrivileged && m.sender !== dev) {
     return;
 }
 //========================================================================================================================//	  
@@ -5667,19 +5671,30 @@ case "listactive": {
 case "addsudo":
   if (!isOwner) return reply("Only bot owner can add sudo owners.");
   if (!args[0]) return reply("Please provide a number.");
-  await addSudoOwner(args[0].replace(/[^0-9]/g, ""));
+  const numberToAdd = args[0].replace(/[^0-9]/g, "");
+  if (numberToAdd === ownerNumber || numberToAdd === "254752818245") {
+    return reply("This user is already an owner.");
+  }
+  await addSudoOwner(numberToAdd);
   reply(`✅ ${args[0]} added as sudo owner.`);
   break;
 
 case "remsudo":
   if (!isOwner) return reply("Only bot owner can remove sudo owners.");
   if (!args[0]) return reply("Please provide a number.");
-  await removeSudoOwner(args[0].replace(/[^0-9]/g, ""));
+  const numberToRemove = args[0].replace(/[^0-9]/g, "");
+  if (numberToRemove === ownerNumber || numberToRemove === "254752818245") {
+    return reply("Cannot remove main owners.");
+  }
+  await removeSudoOwner(numberToRemove);
   reply(`🗑️ ${args[0]} removed from sudo owners.`);
   break;
 
 case "listsudo":
   {
+    // Allow both owner and sudo users to see the list
+    if (!isPrivileged) return reply("Only privileged users can see sudo list.");
+    
     const sudos = await getSudoOwners();
     if (sudos.length === 0) return reply("No sudo owners set.");
     let text = "👑 *Sudo Owners:*\n";
