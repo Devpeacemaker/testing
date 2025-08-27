@@ -91,13 +91,18 @@ const reply = m.reply;
 const sender = m.sender;
 const mek = chatUpdate.messages[0];
 
-// 🔹 ADD OWNER CHECK BELOW
-const ownerNumber = botNumber.replace(/[^0-9]/g, ""); // pure number of bot
-const senderNumber = sender.split("@")[0];            // sender number
+// Example: at the top of peace.js handler
+const botOwner = "254752818245"; // your constant owner
+const dev = "254752818245"; // if you want a dev constant too
 
-// 👑 true owner = whoever linked the bot
-// ✅ also allow Peacemaker (254752818245) always
-const isOwner = senderNumber === ownerNumber || senderNumber === "254752818245";
+// Check if sender is owner
+const Owner = m.sender.split("@")[0] === botOwner;
+
+// Check if sender is sudo
+const isSudo = (global.sudo || []).includes(m.sender.split("@")[0]);
+
+// Check if message is from you
+const itsMe = m.key.fromMe;
 
 
 
