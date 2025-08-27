@@ -126,7 +126,7 @@ const dev = "254752818245"; // Peacemaker's number
     const mime = (quoted.msg || quoted).mimetype || "";
     const qmsg = (quoted.msg || quoted);
     const cmd = body.startsWith(prefix);
-	const badwords = await getBadwords();
+	
    
 //========================================================================================================================//		      
 //========================================================================================================================//	      
@@ -549,6 +549,7 @@ function formatSpeed(ms) {
         };
 //========================================================================================================================//	
 
+const badwords = await getBadwords();
 if (
   badword === 'on' &&
   isBotAdmin &&
