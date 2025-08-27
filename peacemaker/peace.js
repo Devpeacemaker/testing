@@ -101,8 +101,6 @@ const Owner = m.sender.split("@")[0] === botOwner;
 // Check if sender is sudo
 const isSudo = (global.sudo || []).includes(m.sender.split("@")[0]);
 
-// Check if message is from you
-const itsMe = m.key.fromMe;
 
 
 
