@@ -123,6 +123,7 @@ const dev = "254752818245"; // Peacemaker's number
     const mime = (quoted.msg || quoted).mimetype || "";
     const qmsg = (quoted.msg || quoted);
     const cmd = body.startsWith(prefix);
+	const badwords = await getBadwords();
    
 //========================================================================================================================//		      
 //========================================================================================================================//	      
@@ -544,16 +545,15 @@ function formatSpeed(ms) {
             return DateTime.now().setZone('Africa/Nairobi').toLocaleString(DateTime.TIME_SIMPLE);
         };
 //========================================================================================================================//	
-const badwords = await getBadwords();
 
 if (
   badword === 'on' &&
   isBotAdmin &&
   !isAdmin &&
   body &&
-  (new RegExp('\\b' + badwords.join('\\b|\\b') + '\\b')).test(body.toLowerCase())
+  (new RegExp(`\\b(${badwords.join('|')})\\b`, 'i')).test(body.toLowerCase())
 ) {
-  reply("Hey niggah.\n\nMy owner hates usage of bad words in my presence!");
+  reply("⚠️ Bad word detected! You will be removed.");
   client.groupParticipantsUpdate(from, [sender], 'remove');
 }
 //========================================================================================================================//	  
