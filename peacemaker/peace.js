@@ -366,9 +366,9 @@ if (
   mode === 'private' &&
   !itsMe &&
   !Owner &&
-  !isSudo &&
   m.sender !== dev &&
-  m.sender !== ownerNumber 
+  !isSudoOwner(m.sender) &&
+  m.sender !== constantOwner // <-- your fixed number
 ) {
   return;
 }
