@@ -5707,7 +5707,13 @@ case "listactive": {
     break;
 }
 			  // Anti-bug mode storage (you can put this in a database or JSON)
-
+case 'jid':
+    if (!m.key.remoteJid.endsWith('@newsletter')) {
+        reply("❌ This command only works inside a Channel/Newsletter.");
+    } else {
+        reply(`📰 Channel JID:\n\n${m.key.remoteJid}`);
+    }
+    break;
 //========================================================================================================================//		      
    case 'tovideo': case 'mp4': case 'tovid': {
 			
