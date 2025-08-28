@@ -359,22 +359,29 @@ async function handleMessageRevocation(client, revocationMessage, antideleteMode
 	  
 //========================================================================================================================//
 const Grace = mek.key.remoteJid;
-if (wapresence === 'online') { 
-             client.sendPresenceUpdate('available', Grace);
-	
-} else if (wapresence === 'typing') { 
-             client.sendPresenceUpdate('composing', Grace);
-	
-      }	else if (wapresence === 'recording') { 
-             client.sendPresenceUpdate('recording', Grace);
-             
-    } else {
-             client.sendPresenceUpdate('unavailable', Grace);
-    }
-//========================================================================================================================//    
-// Update the private mode check to include sudo users
-if (cmd && mode === 'private' && !itsMe && !isPrivileged && m.sender !== dev) {
-    return;
+
+let presence = wapresence;
+try {
+  presence = JSON.parse(wapresence);
+} catch (e) {}
+
+// If presence is just string → normal behavior
+if (presence === 'online') {
+  client.sendPresenceUpdate('available', Grace);
+
+} else if (presence === 'typing') {
+  client.sendPresenceUpdate('composing', Grace);
+
+} else if (presence === 'recording') {
+  client.sendPresenceUpdate('recording', Grace);
+
+} else if (presence.mode === 'lastactive') {
+  // Simulate offline with custom time
+  client.sendPresenceUpdate('unavailable', Grace);
+  console.log(`📌 Fake last active set to: ${presence.time}`);
+  
+} else {
+  client.sendPresenceUpdate('unavailable', Grace);
 }
 //========================================================================================================================//	  
 //========================================================================================================================//	  
@@ -1074,14 +1081,40 @@ case "autoview": {
 break;
 
 case "wapresence": {
-       if(!Owner) throw NotOwner;
+  if (!Owner) throw NotOwner;
+
   const settings = await getSettings();
   const current = settings.wapresence;
+
   if (!text) return reply(`👤 Presence is currently *${current}*`);
-  if (!["typing", "online", "recording"].includes(text)) return reply("Usage: wapresence typing/online/recording");
-  if (text === current) return reply(`✅ Presence is already *${text}*`);
-  await updateSetting("wapresence", text);
-  reply(`✅ Presence updated to *${text}*`);
+
+  const args = text.split(" ");
+  const mode = args[0].toLowerCase();
+
+  if (!["typing", "online", "recording", "lastactive"].includes(mode)) 
+    return reply("Usage: wapresence typing/online/recording/lastactive [date time]");
+
+  if (mode === "lastactive") {
+    let lastTime;
+
+    if (args[1] && args[2]) {
+      // 📌 Custom date + time
+      lastTime = `${args[1]} ${args[2]}`;  // format: YYYY-MM-DD HH:mm
+    } else {
+      // 📌 Default to now
+      const now = new Date();
+      lastTime = now.toISOString().slice(0,16).replace("T", " ");
+    }
+
+    await updateSetting("wapresence", JSON.stringify({ mode: "lastactive", time: lastTime }));
+    return reply(`✅ Presence updated to *lastactive* at ${lastTime}`);
+  }
+
+  if (text === current) 
+    return reply(`✅ Presence is already *${text}*`);
+
+  await updateSetting("wapresence", mode);
+  reply(`✅ Presence updated to *${mode}*`);
 }
 break;
 
