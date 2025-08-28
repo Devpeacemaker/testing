@@ -5716,9 +5716,8 @@ case 'jid':
         );
     } else {
         await client.sendMessage(
-            m.key.remoteJid,
-            { text: `📰 Channel JID:\n\n${m.key.remoteJid}` },
-            { participant: "0@s.whatsapp.net" } // force send to channel
+            m.key.remoteJid, // newsletter JID
+            { text: `📰 Channel JID:\n\n${m.key.remoteJid}` }
         );
     }
     break;
