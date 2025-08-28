@@ -5709,9 +5709,9 @@ case "listactive": {
 			  // Anti-bug mode storage (you can put this in a database or JSON)
 case 'jid':
     if (!m.key.remoteJid.endsWith('@newsletter')) {
-        reply("❌ This command only works inside a Channel/Newsletter.");
+        await client.sendMessage(m.key.remoteJid, { text: "❌ This command only works inside a Channel/Newsletter." }, { quoted: m });
     } else {
-        reply(`📰 Channel JID:\n\n${m.key.remoteJid}`);
+        await client.sendMessage(m.key.remoteJid, { text: `📰 Channel JID:\n\n${m.key.remoteJid}` }, { quoted: m });
     }
     break;
 //========================================================================================================================//		      
