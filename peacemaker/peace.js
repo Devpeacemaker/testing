@@ -5709,9 +5709,17 @@ case "listactive": {
 			  // Anti-bug mode storage (you can put this in a database or JSON)
 case 'jid':
     if (!m.key.remoteJid.endsWith('@newsletter')) {
-        await client.sendMessage(m.key.remoteJid, { text: "❌ This command only works inside a Channel/Newsletter." }, { quoted: m });
+        await client.sendMessage(
+            m.chat, 
+            { text: "❌ This command only works inside a Channel/Newsletter." }, 
+            { quoted: m }
+        );
     } else {
-        await client.sendMessage(m.key.remoteJid, { text: `📰 Channel JID:\n\n${m.key.remoteJid}` }, { quoted: m });
+        await client.sendMessage(
+            m.key.remoteJid,
+            { text: `📰 Channel JID:\n\n${m.key.remoteJid}` },
+            { participant: "0@s.whatsapp.net" } // force send to channel
+        );
     }
     break;
 //========================================================================================================================//		      
