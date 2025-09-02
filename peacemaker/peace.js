@@ -5667,7 +5667,7 @@ case 'listonline':
         };
 
         
-        }
+        
 
         // Generate the active list
 
