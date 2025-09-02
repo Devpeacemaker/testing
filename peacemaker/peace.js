@@ -1144,19 +1144,28 @@ case "listbadword":
   words.forEach((w, i) => bwText += `\n${i + 1}. ${w}`);
   reply(bwText);
   break;
-			case "badword":
+			
+		case "badword":
   if (!isPrivileged) return reply("Only privileged users can toggle badword system.");
   if (!args[0]) return reply("Usage: badword on/off");
 
-  if (args[0].toLowerCase() === "on") {
-    settings.badword = "on";
-    reply("✅ Badword filter has been *enabled*.");
-  } else if (args[0].toLowerCase() === "off") {
-    settings.badword = "off";
-    reply("🛑 Badword filter has been *disabled*.");
-  } else {
-    reply("Usage: badword on/off");
-  }
+  (async () => {
+    const option = args[0].toLowerCase();
+    if (option === "on" || option === "off") {
+      const success = await updateSetting("badword", option);
+      if (success) {
+        reply(
+          option === "on"
+            ? "✅ Badword filter has been *enabled*."
+            : "🛑 Badword filter has been *disabled*."
+        );
+      } else {
+        reply("❌ Failed to update badword setting.");
+      }
+    } else {
+      reply("Usage: badword on/off");
+    }
+  })();
   break;
 		
 case "anticall": {
