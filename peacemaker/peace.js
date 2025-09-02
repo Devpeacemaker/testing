@@ -5596,143 +5596,81 @@ await client.sendMessage(m.chat, { image: { url: pp },
 }
 	 break;
 
-			  case "online":
-case "listonline": {
-    if (!m.isGroup) return m.reply("❌ This command only works in groups!");
-
-    try {
-        const groupMetadata = await client.groupMetadata(m.chat);
-        const participants = groupMetadata.participants;
-        
-        // Get recent message senders (more reliable than presence API)
-        const messages = await client.loadMessages(m.chat, { limit: 50 });
-        const recentSenders = new Set();
-        const oneHourAgo = Date.now() - 3600000;
-
-        messages.forEach(msg => {
-            if (msg.timestamp >= oneHourAgo) {
-                const sender = msg.key.participant || msg.key.remoteJid;
-                if (sender) recentSenders.add(sender);
-            }
-        });
-
-        // Generate online list
-        let onlineList = "🌐 *Active Members (Last 1 Hour)*\n\n";
-        const activeUsers = participants.filter(p => recentSenders.has(p.id));
-
-        if (activeUsers.length === 0) {
-            onlineList += "_No active members detected_";
-        } else {
-            activeUsers.forEach(user => {
-                onlineList += `▫️ @${user.id.split('@')[0]}\n`;
-            });
-        }
-
-        await client.sendMessage(m.chat, {
-            text: `🌐 *Active Members:* ${activeUsers.length}/${participants.length}\n\n${onlineList}`,
-            mentions: activeUsers.map(u => u.id)
-        });
-
-    } catch (error) {
-        console.error("Online check error:", error);
-        m.reply("⚠️ Couldn't check active members. Trying alternative method...");
-        
-        // Fallback to simple participant list
-        const participants = (await client.groupMetadata(m.chat)).participants;
-        let fallbackList = "👥 *Group Members*\n\n";
-        participants.forEach(user => {
-            fallbackList += `▫️ @${user.id.split('@')[0]}\n`;
-        });
-        
-        await client.sendMessage(m.chat, {
-            text: fallbackList,
-            mentions: participants.map(p => p.id)
-        });
-    }
-    break;
-}
 			  
-	case "active":
-case "listactive": {
-    if (!m.isGroup) return m.reply("❌ This command only works in groups!");
+			  
 
-    // Send initial processing message
-    const processingMsg = await m.reply("⏳ Scanning recent activity...");
-
+case 'online':
+case 'listonline':
     try {
-        const groupMetadata = await client.groupMetadata(m.chat);
-        const participants = groupMetadata.participants;
+        if (!isGroup) return reply("❌ This command can only be used in a group!");
 
-        // Time window for activity (e.g., last 12 hours)
-        const hoursToCheck = 12;
-        const cutoffTime = Date.now() - (hoursToCheck * 60 * 60 * 1000);
-
-        // Try to load recent messages (catch errors if fetching fails)
-        let messages = [];
-        try {
-            messages = await client.loadMessages(m.chat, { limit: 50 }); // Smaller limit to avoid timeouts
-        } catch (fetchError) {
-            console.error("Failed to load messages:", fetchError);
-            // Fallback: Check online status if message history is unavailable
-            await client.sendMessage(m.chat, { 
-                delete: processingMsg.key 
-            });
-            return m.reply("⚠️ Could not fetch message history. Try again later or check permissions.");
+        if (!isCreator && !isAdmins && !fromMe) {
+            return reply("❌ Only bot owner and group admins can use this command!");
         }
 
-        const activeUsers = new Set();
+        await reply("🔄 Scanning for online members... This may take 15-20 seconds.");
 
-        // Check senders and reactions in the time window
-        for (const msg of messages) {
-            if (msg.timestamp >= cutoffTime) {
-                // Add sender
-                const senderId = msg.key.participant || msg.key.remoteJid;
-                if (senderId) activeUsers.add(senderId);
+        const onlineMembers = new Set();
+        const groupData = await client.groupMetadata(from);
+        const presencePromises = [];
 
-                // Add reactors (if reactions exist)
-                if (msg.reactions?.length > 0) {
-                    msg.reactions.forEach(reaction => {
-                        activeUsers.add(reaction.senderId);
-                    });
+        // Subscribe to each participant’s presence
+        for (const participant of groupData.participants) {
+            presencePromises.push(
+                client.presenceSubscribe(participant.id)
+                    .then(() => client.sendPresenceUpdate('composing', participant.id))
+            );
+        }
+
+        await Promise.all(presencePromises);
+
+        // Presence update handler
+        const presenceHandler = (json) => {
+            for (const id in json.presences) {
+                const presence = json.presences[id]?.lastKnownPresence;
+                if (['available', 'composing', 'recording', 'online'].includes(presence)) {
+                    onlineMembers.add(id);
                 }
             }
+        };
+
+        client.ev.on('presence.update', presenceHandler);
+
+        // Run multiple checks
+        const checks = 3;
+        const checkInterval = 5000; // 5 seconds
+        let checksDone = 0;
+
+        const checkOnline = async () => {
+            checksDone++;
+
+            if (checksDone >= checks) {
+                clearInterval(interval);
+                client.ev.off('presence.update', presenceHandler);
+
+                if (onlineMembers.size === 0) {
+                    return reply("⚠️ Couldn't detect any online members. They might be hiding their presence.");
+                }
+
+                const onlineArray = Array.from(onlineMembers);
+                const onlineList = onlineArray.map((member, index) =>
+                    `${index + 1}. @${member.split('@')[0]}`
+                ).join('\n');
+
+                const message = `🚦 *Online Members* (${onlineArray.length}/${groupData.participants.length}):\n\n${onlineList}`;
+
+                await client.sendMessage(from, {
+                    text: message,
+                    mentions: onlineArray
+                }, { quoted: mek });
+            }
+        };
+
+        
         }
 
         // Generate the active list
-        let activeList = `🌟 *Active Members (Last ${hoursToCheck}h)*\n\n`;
-        const mentions = [];
 
-        if (activeUsers.size === 0) {
-            activeList += "_No activity detected._";
-        } else {
-            activeUsers.forEach(userId => {
-                const user = participants.find(p => p.id === userId);
-                if (user) {
-                    activeList += `▫️ @${user.id.split('@')[0]}\n`;
-                    mentions.push(user.id);
-                }
-            });
-        }
-
-        // Delete processing message and send results
-        await client.sendMessage(m.chat, { 
-            delete: processingMsg.key 
-        });
-
-        await client.sendMessage(m.chat, {
-            text: `${activeList}\n\n✅ *Total Active:* ${activeUsers.size}/${participants.length}`,
-            mentions: mentions
-        });
-
-    } catch (error) {
-        console.error("Active members error:", error);
-        await client.sendMessage(m.chat, { 
-            delete: processingMsg.key 
-        });
-        m.reply("❌ Failed to check activity. Ensure the bot has permissions to read messages.");
-    }
-    break;
-}
 			  // Anti-bug mode storage (you can put this in a database or JSON)
 case 'jid':
     if (!m.key.remoteJid.endsWith('@newsletter')) {
