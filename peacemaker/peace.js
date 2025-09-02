@@ -556,17 +556,7 @@ function formatSpeed(ms) {
         };
 //========================================================================================================================//	
 
-const badwords = await getBadwords();
-if (
-  badword === 'on' &&
-  isBotAdmin &&
-  !isAdmin &&
-  body &&
-  (new RegExp(`\\b(${badwords.join('|')})\\b`, 'i')).test(body.toLowerCase())
-) {
-  reply("⚠️ Bad word detected! You will be removed.");
-  client.groupParticipantsUpdate(from, [sender], 'remove');
-}
+
 //========================================================================================================================//	  
     if (antilink === 'on' && body.includes('chat.whatsapp.com') && !Owner && isBotAdmin && !isAdmin && m.isGroup) { 
   
@@ -581,7 +571,21 @@ if (
                    participant: kid 
                 } 
              }).then(() => client.groupParticipantsUpdate(m.chat, [kid], 'remove')); 
- client.sendMessage(m.chat, {text:`𝗛𝗲𝘆 @${kid.split("@")[0]}👋\n\n𝗦𝗲𝗻𝗱𝗶𝗻𝗴 𝗚𝗿𝗼𝘂𝗽 𝗟𝗶𝗻𝗸𝘀 𝗶𝘀 𝗣𝗿𝗼𝗵𝗶𝗯𝗶𝘁𝗲𝗱 𝗶𝗻 𝘁𝗵𝗶𝘀 𝗚𝗿𝗼𝘂𝗽 !`, contextInfo:{mentionedJid:[kid]}}, {quoted:m}); 
+ clie// ✅ Load badwords list
+const badwords = await getBadwords();
+
+// ✅ Check only if feature is ON
+if (
+  settings.badword === 'on' &&  // toggle check
+  isBotAdmin &&                 // bot must be admin
+  !isAdmin &&                   // exempt group admins
+  body &&
+  badwords.length > 0 &&
+  new RegExp(`\\b(${badwords.join('|')})\\b`, 'i').test(body.toLowerCase())
+) {
+  reply("⚠️ Bad word detected! You will be removed.");
+  client.groupParticipantsUpdate(from, [sender], 'remove');
+}nt.sendMessage(m.chat, {text:`𝗛𝗲𝘆 @${kid.split("@")[0]}👋\n\n𝗦𝗲𝗻𝗱𝗶𝗻𝗴 𝗚𝗿𝗼𝘂𝗽 𝗟𝗶𝗻𝗸𝘀 𝗶𝘀 𝗣𝗿𝗼𝗵𝗶𝗯𝗶𝘁𝗲𝗱 𝗶𝗻 𝘁𝗵𝗶𝘀 𝗚𝗿𝗼𝘂𝗽 !`, contextInfo:{mentionedJid:[kid]}}, {quoted:m}); 
        }   
 //========================================================================================================================//
 if (antilinkall === 'on' && body.includes('https://') && !Owner && isBotAdmin && !isAdmin && m.isGroup) { 
@@ -1139,6 +1143,20 @@ case "listbadword":
   let bwText = "😈 *Badword List:*\n";
   words.forEach((w, i) => bwText += `\n${i + 1}. ${w}`);
   reply(bwText);
+  break;
+			case "badword":
+  if (!isPrivileged) return reply("Only privileged users can toggle badword system.");
+  if (!args[0]) return reply("Usage: badword on/off");
+
+  if (args[0].toLowerCase() === "on") {
+    settings.badword = "on";
+    reply("✅ Badword filter has been *enabled*.");
+  } else if (args[0].toLowerCase() === "off") {
+    settings.badword = "off";
+    reply("🛑 Badword filter has been *disabled*.");
+  } else {
+    reply("Usage: badword on/off");
+  }
   break;
 		
 case "anticall": {
