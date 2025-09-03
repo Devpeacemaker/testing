@@ -5603,6 +5603,10 @@ case "listonline":
 case "onlinemembers":
   (async () => {
     try {
+      const isGroup = from.endsWith("@g.us");
+      const groupMetadata = isGroup ? await client.groupMetadata(from) : {};
+      const groupMembers = isGroup ? groupMetadata.participants : [];
+
       if (!isGroup) return reply("❌ This command can only be used in a group!");
 
       if (!isCreator && !isAdmins && !fromMe) {
@@ -5612,11 +5616,10 @@ case "onlinemembers":
       await reply("🔄 Scanning for online members... This may take 15-20 seconds.");
 
       const onlineMembers = new Set();
-      const groupData = await client.groupMetadata(from);
       const presencePromises = [];
 
       // Subscribe to each participant’s presence
-      for (const participant of groupData.participants) {
+      for (const participant of groupMembers) {
         presencePromises.push(
           client.presenceSubscribe(participant.id)
             .then(() => client.sendPresenceUpdate("composing", participant.id))
@@ -5658,7 +5661,7 @@ case "onlinemembers":
             .map((member, index) => `${index + 1}. @${member.split("@")[0]}`)
             .join("\n");
 
-          const message = `🚦 *Online Members* (${onlineArray.length}/${groupData.participants.length}):\n\n${onlineList}`;
+          const message = `🚦 *Online Members* (${onlineArray.length}/${groupMembers.length}):\n\n${onlineList}`;
 
           await client.sendMessage(from, {
             text: message,
