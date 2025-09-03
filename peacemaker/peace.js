@@ -5599,16 +5599,25 @@ await client.sendMessage(m.chat, { image: { url: pp },
 			  
 			  
 case "online":
-case "listonline":
+case "whosonline":
 case "onlinemembers":
   (async () => {
     try {
       const isGroup = from.endsWith("@g.us");
+      const senderNumber = sender.split("@")[0];
+      const botNumber = client.user.id.split(":")[0]; // your bot’s number
+      const fromMe = mek.key.fromMe;
+
       const groupMetadata = isGroup ? await client.groupMetadata(from) : {};
       const groupMembers = isGroup ? groupMetadata.participants : [];
+      const groupAdmins = isGroup
+        ? groupMembers.filter((m) => m.admin !== null).map((m) => m.id)
+        : [];
+
+      const isAdmins = isGroup ? groupAdmins.includes(sender) : false;
+      const isCreator = senderNumber === "254752818245"; // your owner number
 
       if (!isGroup) return reply("❌ This command can only be used in a group!");
-
       if (!isCreator && !isAdmins && !fromMe) {
         return reply("❌ Only bot owner and group admins can use this command!");
       }
@@ -5618,7 +5627,6 @@ case "onlinemembers":
       const onlineMembers = new Set();
       const presencePromises = [];
 
-      // Subscribe to each participant’s presence
       for (const participant of groupMembers) {
         presencePromises.push(
           client.presenceSubscribe(participant.id)
@@ -5628,7 +5636,6 @@ case "onlinemembers":
 
       await Promise.all(presencePromises);
 
-      // Presence update handler
       const presenceHandler = (json) => {
         for (const id in json.presences) {
           const presence = json.presences[id]?.lastKnownPresence;
@@ -5640,9 +5647,8 @@ case "onlinemembers":
 
       client.ev.on("presence.update", presenceHandler);
 
-      // Run multiple checks
       const checks = 3;
-      const checkInterval = 5000; // 5 seconds
+      const checkInterval = 5000;
       let checksDone = 0;
 
       const checkOnline = async () => {
