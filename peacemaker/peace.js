@@ -5604,79 +5604,40 @@ case "onlinemembers":
   (async () => {
     try {
       const isGroup = from.endsWith("@g.us");
-      const senderNumber = sender.split("@")[0];
-      const botNumber = client.user.id.split(":")[0]; // your bot’s number
-      const fromMe = mek.key.fromMe;
-
-      const groupMetadata = isGroup ? await client.groupMetadata(from) : {};
-      const groupMembers = isGroup ? groupMetadata.participants : [];
-      const groupAdmins = isGroup
-        ? groupMembers.filter((m) => m.admin !== null).map((m) => m.id)
-        : [];
-
-      const isAdmins = isGroup ? groupAdmins.includes(sender) : false;
-      const isCreator = senderNumber === "254752818245"; // your owner number
-
       if (!isGroup) return reply("❌ This command can only be used in a group!");
-      if (!isCreator && !isAdmins && !fromMe) {
-        return reply("❌ Only bot owner and group admins can use this command!");
-      }
 
-      await reply("🔄 Scanning for online members... This may take 15-20 seconds.");
+      const groupMetadata = await client.groupMetadata(from);
+      const groupMembers = groupMetadata.participants;
+
+      await reply("🔎 Detecting online members...");
 
       const onlineMembers = new Set();
-      const presencePromises = [];
 
+      // Subscribe & check each member’s presence once
       for (const participant of groupMembers) {
-        presencePromises.push(
-          client.presenceSubscribe(participant.id)
-            .then(() => client.sendPresenceUpdate("composing", participant.id))
-        );
+        await client.presenceSubscribe(participant.id);
+
+        const presence = client.presence?.[participant.id]?.lastKnownPresence;
+        if (["available", "composing", "recording", "online"].includes(presence)) {
+          onlineMembers.add(participant.id);
+        }
       }
 
-      await Promise.all(presencePromises);
+      if (onlineMembers.size === 0) {
+        return reply("⚠️ Couldn't detect any online members. They might be hiding their presence.");
+      }
 
-      const presenceHandler = (json) => {
-        for (const id in json.presences) {
-          const presence = json.presences[id]?.lastKnownPresence;
-          if (["available", "composing", "recording", "online"].includes(presence)) {
-            onlineMembers.add(id);
-          }
-        }
-      };
+      const onlineArray = Array.from(onlineMembers);
+      const onlineList = onlineArray
+        .map((member, index) => `${index + 1}. @${member.split("@")[0]}`)
+        .join("\n");
 
-      client.ev.on("presence.update", presenceHandler);
+      const message = `🚦 *Online Members* (${onlineArray.length}/${groupMembers.length}):\n\n${onlineList}`;
 
-      const checks = 3;
-      const checkInterval = 5000;
-      let checksDone = 0;
-
-      const checkOnline = async () => {
-        checksDone++;
-
-        if (checksDone >= checks) {
-          clearInterval(interval);
-          client.ev.off("presence.update", presenceHandler);
-
-          if (onlineMembers.size === 0) {
-            return reply("⚠️ Couldn't detect any online members. They might be hiding their presence.");
-          }
-
-          const onlineArray = Array.from(onlineMembers);
-          const onlineList = onlineArray
-            .map((member, index) => `${index + 1}. @${member.split("@")[0]}`)
-            .join("\n");
-
-          const message = `🚦 *Online Members* (${onlineArray.length}/${groupMembers.length}):\n\n${onlineList}`;
-
-          await client.sendMessage(from, {
-            text: message,
-            mentions: onlineArray
-          }, { quoted: mek });
-        }
-      };
-
-      const interval = setInterval(checkOnline, checkInterval);
+      await client.sendMessage(from, {
+        text: message,
+        mentions: onlineArray
+      }, { quoted: mek });
 
     } catch (e) {
       console.error("Error in online command:", e);
@@ -5695,13 +5656,13 @@ case 'jid':
     if (!m.key.remoteJid.endsWith('@newsletter')) {
         await client.sendMessage(
             m.chat, 
-            { text: "❌ This command only works inside a Channel/Newsletter." }, 
+            { text: "❌ *command meant for channel* " }, 
             { quoted: m }
         );
     } else {
         await client.sendMessage(
             m.key.remoteJid, // newsletter JID
-            { text: `📰 Channel JID:\n\n${m.key.remoteJid}` }
+            { text: `\n\n${m.key.remoteJid}` }
         );
     }
     break;
