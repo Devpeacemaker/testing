@@ -1631,83 +1631,43 @@ let options = []
     let search = await yts(text);
     let link = search.all[0].url;
     let title = search.all[0].title.replace(/[^a-zA-Z0-9 ]/g, "");
+    let outputFileName = `${title}.mp3`;
+    let outputPath = path.join(__dirname, outputFileName);
     
-    // Updated API endpoints that are more reliable
-    const apis = [
-      `https://api.download-lagu-mp3.com/@api/json/mp3/${encodeURIComponent(link)}`,
-      `https://api.vevioz.com/api/button/mp3/${encodeURIComponent(link)}`,
-      `https://api.getmyuni.com/v1/mp3/download?url=${encodeURIComponent(link)}`,
-      `https://api.ytbmp3.com/@api/formats/mp3/${encodeURIComponent(link)}`
-    ];
-
-    for (const api of apis) {
-      try {
-        let data = await fetchJson(api);
-        let videoUrl;
-
-        // Parse different API response formats
-        if (api.includes('download-lagu-mp3')) {
-          videoUrl = data?.vidInfo?.mp3_url;
-        } else if (api.includes('vevioz')) {
-          videoUrl = data?.url;
-        } else if (api.includes('getmyuni')) {
-          videoUrl = data?.downloadUrl;
-        } else if (api.includes('ytbmp3')) {
-          videoUrl = data?.url;
-        }
-
-        if (videoUrl) {
-          let outputFileName = `${title}.mp3`;
-          let outputPath = path.join(__dirname, outputFileName);
-
-          const response = await axios({
-            url: videoUrl,
-            method: "GET",
-            responseType: "stream"
-          });
-
-          if (response.status !== 200) {
-            m.reply("Sorry but the API endpoint didn't respond correctly. Trying next API...");
-            continue;
-          }
-          
-          // Create write stream
-          const writer = fs.createWriteStream(outputPath);
-          response.data.pipe(writer);
-          
-          writer.on('finish', async () => {
-            await client.sendMessage(
-              m.chat,
-              {
-                document: { url: `file://${outputPath}` },
-                mimetype: "audio/mp3",
-                caption: "𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳𝙴𝙳  𝙱𝚈 𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱",
-                fileName: outputFileName,
-              },
-              { quoted: m }
-            );
-            fs.unlinkSync(outputPath);
-          });
-          
-          writer.on('error', (err) => {
-            m.reply("Download failed\n" + err.message);
-            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-          });
-          
-          return;
-        }
-      } catch (e) {
-        console.error("API error:", e.message);
-        continue;
-      }
-    }
-    m.reply("𝙁𝙖𝙞𝙡𝙚𝙙 𝙩𝙤 𝙛𝙚𝙩𝙌𝙘𝙝 𝙙𝙤𝙬𝙣𝙡𝙤𝙖𝙙 𝙪𝙧𝙡 𝙛𝙧𝙤𝙢 𝙖𝙡𝙡 𝘼𝙋𝙄𝙨.");
+    // Using ytdl-core for direct download
+    const audioStream = ytdl(link, {
+      filter: 'audioonly',
+      quality: 'highestaudio'
+    });
+    
+    const ffmpegProcess = ffmpeg(audioStream)
+      .audioBitrate(128)
+      .toFormat('mp3')
+      .save(outputPath)
+      .on('end', async () => {
+        await client.sendMessage(
+          m.chat,
+          {
+            document: { url: `file://${outputPath}` },
+            mimetype: "audio/mp3",
+            caption: "𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳𝙴𝙳  𝙱𝚈 𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱",
+            fileName: outputFileName,
+          },
+          { quoted: m }
+        );
+        fs.unlinkSync(outputPath);
+      })
+      .on('error', (err) => {
+        m.reply("Conversion failed\n" + err.message);
+        if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+      });
+      
   } catch (error) {
     m.reply("Download failed\n" + error.message);
   }
 }
 break;
-
+	
 //========================================================================================================================//		      
  case "play2": {	      
     if (!text)  return reply("What song do you want to download?");		      
