@@ -1629,39 +1629,94 @@ let options = []
   if (!text) return m.reply("What song do you want to download?");
   try {
     let search = await yts(text);
-    let link = search.all[0].url;
+    let videoId = search.all[0].url.split('v=')[1];
     let title = search.all[0].title.replace(/[^a-zA-Z0-9 ]/g, "");
-    let outputFileName = `${title}.mp3`;
-    let outputPath = path.join(__dirname, outputFileName);
     
-    // Using ytdl-core for direct download
-    const audioStream = ytdl(link, {
-      filter: 'audioonly',
-      quality: 'highestaudio'
-    });
+    // Use a proxy service that handles YouTube downloads
+    const proxyApis = [
+      `https://api.vevioz.com/api/button/mp3/${videoId}`,
+      `https://yt5s.com/en/api/convert`,
+      `https://ytdl-api.vercel.app/api/download?id=${videoId}&format=mp3`
+    ];
     
-    const ffmpegProcess = ffmpeg(audioStream)
-      .audioBitrate(128)
-      .toFormat('mp3')
-      .save(outputPath)
-      .on('end', async () => {
-        await client.sendMessage(
-          m.chat,
-          {
-            document: { url: `file://${outputPath}` },
-            mimetype: "audio/mp3",
-            caption: "𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳𝙴𝙳  𝙱𝚈 𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱",
-            fileName: outputFileName,
-          },
-          { quoted: m }
-        );
-        fs.unlinkSync(outputPath);
-      })
-      .on('error', (err) => {
-        m.reply("Conversion failed\n" + err.message);
-        if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-      });
-      
+    for (const api of proxyApis) {
+      try {
+        let data;
+        
+        if (api.includes('yt5s.com')) {
+          // Special handling for yt5s API
+          const response = await fetch(api, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              v: videoId,
+              format: 'mp3'
+            })
+          });
+          data = await response.json();
+        } else {
+          data = await fetchJson(api);
+        }
+        
+        let downloadUrl;
+        
+        if (api.includes('vevioz')) {
+          downloadUrl = data.url;
+        } else if (api.includes('yt5s')) {
+          downloadUrl = data.durl;
+        } else if (api.includes('ytdl-api')) {
+          downloadUrl = data.downloadUrl;
+        }
+        
+        if (downloadUrl) {
+          let outputFileName = `${title}.mp3`;
+          let outputPath = path.join(__dirname, outputFileName);
+          
+          const response = await axios({
+            url: downloadUrl,
+            method: "GET",
+            responseType: "stream",
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          });
+          
+          if (response.status !== 200) {
+            continue;
+          }
+          
+          const writer = fs.createWriteStream(outputPath);
+          response.data.pipe(writer);
+          
+          writer.on('finish', async () => {
+            await client.sendMessage(
+              m.chat,
+              {
+                document: { url: `file://${outputPath}` },
+                mimetype: "audio/mp3",
+                caption: "𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳𝙴𝙳  𝙱𝚈 𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱",
+                fileName: outputFileName,
+              },
+              { quoted: m }
+            );
+            fs.unlinkSync(outputPath);
+          });
+          
+          writer.on('error', (err) => {
+            m.reply("Download failed\n" + err.message);
+            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+          });
+          
+          return;
+        }
+      } catch (e) {
+        console.error("API error:", e.message);
+        continue;
+      }
+    }
+    m.reply("Failed to download from all available sources.");
   } catch (error) {
     m.reply("Download failed\n" + error.message);
   }
