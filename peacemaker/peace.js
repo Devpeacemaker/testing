@@ -1625,27 +1625,39 @@ let options = []
 		break;
 
 //========================================================================================================================//		      
-	      case 'play':{
-     if (!text) return m.reply("What song do you want to download?");
-try {
+	      case 'play': {
+  if (!text) return m.reply("What song do you want to download?");
+  try {
     let search = await yts(text);
     let link = search.all[0].url;
-
-const apis = [
-      `https://xploader-api.vercel.app/ytmp3?url=${link}`,
-      `https://apis.davidcyriltech.my.id/youtube/mp3?url=${link}`,
-      `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${link}`,
-      `https://api.dreaded.site/api/ytdl/audio?url=${link}`
-       ];
+    let title = search.all[0].title.replace(/[^a-zA-Z0-9 ]/g, "");
+    
+    // Updated API endpoints that are more reliable
+    const apis = [
+      `https://api.download-lagu-mp3.com/@api/json/mp3/${encodeURIComponent(link)}`,
+      `https://api.vevioz.com/api/button/mp3/${encodeURIComponent(link)}`,
+      `https://api.getmyuni.com/v1/mp3/download?url=${encodeURIComponent(link)}`,
+      `https://api.ytbmp3.com/@api/formats/mp3/${encodeURIComponent(link)}`
+    ];
 
     for (const api of apis) {
       try {
         let data = await fetchJson(api);
+        let videoUrl;
 
-        // Checking if the API response is successful
-        if (data.status === 200 || data.success) {
-          let videoUrl = data.result?.downloadUrl || data.url;
-          let outputFileName = `${search.all[0].title.replace(/[^a-zA-Z0-9 ]/g, "")}.mp3`;
+        // Parse different API response formats
+        if (api.includes('download-lagu-mp3')) {
+          videoUrl = data?.vidInfo?.mp3_url;
+        } else if (api.includes('vevioz')) {
+          videoUrl = data?.url;
+        } else if (api.includes('getmyuni')) {
+          videoUrl = data?.downloadUrl;
+        } else if (api.includes('ytbmp3')) {
+          videoUrl = data?.url;
+        }
+
+        if (videoUrl) {
+          let outputFileName = `${title}.mp3`;
           let outputPath = path.join(__dirname, outputFileName);
 
           const response = await axios({
@@ -1655,35 +1667,41 @@ const apis = [
           });
 
           if (response.status !== 200) {
-            m.reply("sorry but the API endpoint didn't respond correctly. Try again later.");
+            m.reply("Sorry but the API endpoint didn't respond correctly. Trying next API...");
             continue;
           }
-		ffmpeg(response.data)
-            .toFormat("mp3")
-            .save(outputPath)
-            .on("end", async () => {
-await client.sendMessage(
-                m.chat,
-                {
-                  document: { url: outputPath },
-                  mimetype: "audio/mp3",
-		  caption: "𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳𝙴𝙳  𝙱𝚈 𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱",
-                  fileName: outputFileName,
-                },
-                { quoted: m }
-              );
-              fs.unlinkSync(outputPath);
-            })
-            .on("error", (err) => {
-              m.reply("Download failed\n" + err.message);
-            });
+          
+          // Create write stream
+          const writer = fs.createWriteStream(outputPath);
+          response.data.pipe(writer);
+          
+          writer.on('finish', async () => {
+            await client.sendMessage(
+              m.chat,
+              {
+                document: { url: `file://${outputPath}` },
+                mimetype: "audio/mp3",
+                caption: "𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳𝙴𝙳  𝙱𝚈 𝙿𝙴𝙰𝙲𝙴 𝙷𝚄𝙱",
+                fileName: outputFileName,
+              },
+              { quoted: m }
+            );
+            fs.unlinkSync(outputPath);
+          });
+          
+          writer.on('error', (err) => {
+            m.reply("Download failed\n" + err.message);
+            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+          });
+          
           return;
         }
       } catch (e) {
+        console.error("API error:", e.message);
         continue;
       }
-   }
-    m.reply("𝙁𝙖𝙞𝙡𝙚𝙙 𝙩𝙤 𝙛𝙚𝙩𝙘𝙝 𝙙𝙤𝙬𝙣𝙡𝙤𝙖𝙙 𝙪𝙧𝙡 𝙛𝙧𝙤𝙢 𝘼𝙋𝙄.");
+    }
+    m.reply("𝙁𝙖𝙞𝙡𝙚𝙙 𝙩𝙤 𝙛𝙚𝙩𝙌𝙘𝙝 𝙙𝙤𝙬𝙣𝙡𝙤𝙖𝙙 𝙪𝙧𝙡 𝙛𝙧𝙤𝙢 𝙖𝙡𝙡 𝘼𝙋𝙄𝙨.");
   } catch (error) {
     m.reply("Download failed\n" + error.message);
   }
